@@ -68,15 +68,15 @@
         </button>
       </form>
 
-      <!-- Teacher Sign In Form (Name + Password, No Default Hints) -->
+      <!-- Teacher Sign In Form (Username + Password) -->
       <form id="formInstructorLogin" onsubmit="handleInstructorLogin(event)" class="space-y-4 hidden">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Teacher Name</label>
-          <input type="text" id="loginTeacherName" required placeholder="Enter teacher name" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white transition">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Username</label>
+          <input type="text" id="loginTeacherUsername" required placeholder="Enter username" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white transition">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Password / PIN</label>
-          <input type="password" id="loginPin" required placeholder="Enter password" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white font-mono-num transition">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+          <input type="password" id="loginTeacherPassword" required placeholder="Enter password" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white font-mono-num transition">
         </div>
         <button type="submit" class="w-full mt-2 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition">
           Unlock Teacher Portal <i data-lucide="shield" class="w-4 h-4"></i>
@@ -101,7 +101,7 @@
       <!-- User Info & Sign Out -->
       <div class="flex items-center space-x-3">
         <div class="text-right hidden sm:block">
-          <p id="headerUserName" class="text-xs font-semibold text-slate-900">Guest</p>
+          <p id="headerUserName" class="text-xs font-bold text-slate-900">Guest</p>
           <p id="headerUserSub" class="text-[10px] text-slate-500 font-mono-num">Class: --</p>
         </div>
         <button onclick="handleSignOut()" title="Sign Out / Switch User" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 border border-slate-200 flex items-center justify-center text-slate-600 transition">
@@ -270,43 +270,22 @@
     <!-- ================= TEACHER PANEL ================= -->
     <div id="witchInstructorPortal" class="space-y-6 hidden">
       
-      <!-- Teacher Header -->
+      <!-- Teacher Header Showing Teacher Name -->
       <div class="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
         <div>
           <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200">
             Teacher Command Portal
           </span>
-          <h2 class="text-2xl font-black text-slate-900 tracking-tight mt-1">Classroom & Course Manager</h2>
+          <h2 class="text-2xl font-black text-slate-900 tracking-tight mt-1">
+            Welcome, <span id="teacherDashboardName" class="text-purple-700">Teacher</span>
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Decision Sciences Classroom & Course Hub</p>
         </div>
         <div class="flex items-center gap-2">
           <button onclick="fetchGoogleSheetRoster()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync Student Logs
           </button>
         </div>
-      </div>
-
-      <!-- Add Class Form -->
-      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-        <h3 class="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-4 h-4 text-purple-600"></i> Add New Class & Student Passcode
-        </h3>
-        <p class="text-xs text-slate-500 mb-4">Adds a new active class to the <strong class="text-slate-700">UserRoles</strong> sheet for students to select from.</p>
-
-        <form onsubmit="handleAddNewClass(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Class Number / Code</label>
-            <input type="text" id="newClassNumber" required placeholder="e.g. BSAN-7021" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono-num uppercase focus:outline-none focus:border-purple-600">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Student Passcode</label>
-            <input type="text" id="newClassPasscode" required placeholder="e.g. FALL2026" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono-num focus:outline-none focus:border-purple-600">
-          </div>
-          <div class="flex items-end">
-            <button type="submit" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-              <i data-lucide="save" class="w-4 h-4"></i> Save to UserRoles
-            </button>
-          </div>
-        </form>
       </div>
 
       <!-- Slide Payoff Benchmark Table -->
@@ -461,7 +440,6 @@
 
   <!-- ================= SCRIPTS ================= -->
   <script>
-    // Live Apps Script Web App URL
     const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycKdQ20rfUkoV0Ju98aWGynzZrZkQdx4XG5XBkONVR9KqzzYIJywqZhTssPJUDl7tn/exec";
 
     const TOTAL_CAMPAIGN_NIGHTS = 30;
@@ -544,57 +522,32 @@
       applyAuthenticatedSession();
     }
 
-    // Teacher authentication using TeacherName + PIN against UserRoles
+    // Teacher authentication using Username + Password against UserRoles sheet
     function handleInstructorLogin(e) {
       e.preventDefault();
-      const teacherName = document.getElementById('loginTeacherName').value.trim();
-      const pin = document.getElementById('loginPin').value.trim();
+      const username = document.getElementById('loginTeacherUsername').value.trim();
+      const password = document.getElementById('loginTeacherPassword').value.trim();
 
-      if (!teacherName || !pin) {
-        showToast("Please enter teacher name and password.", "error");
+      if (!username || !password) {
+        showToast("Please enter username and password.", "error");
         return;
       }
 
-      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?action=verifyTeacher&name=${encodeURIComponent(teacherName)}&pin=${encodeURIComponent(pin)}`)
+      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?action=verifyTeacher&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`)
         .then(res => res.json())
         .then(res => {
           if (res.success) {
-            appState.user = { role: 'instructor', name: res.teacherName || teacherName, classNumber: 'ALL' };
+            appState.user = { role: 'instructor', name: res.teacherName || username, classNumber: 'ALL' };
             sessionStorage.setItem('sim_user', JSON.stringify(appState.user));
             applyAuthenticatedSession();
           } else {
-            showToast("Invalid Teacher Name or Password.", "error");
+            showToast("Invalid Username or Password.", "error");
           }
         })
         .catch(err => {
           console.error("Verification error", err);
           showToast("Could not verify teacher credentials.", "error");
         });
-    }
-
-    function handleAddNewClass(e) {
-      e.preventDefault();
-      const cNum = document.getElementById('newClassNumber').value.trim().toUpperCase();
-      const cPass = document.getElementById('newClassPasscode').value.trim();
-
-      if (!cNum || !cPass) return;
-
-      const params = new URLSearchParams({
-        action: 'addClass',
-        teacherName: (appState.user && appState.user.name) || 'Teacher',
-        classNumber: cNum,
-        studentPasscode: cPass,
-        pin: ''
-      });
-
-      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?${params.toString()}`)
-        .then(() => {
-          showToast(`Saved ${cNum} to UserRoles sheet!`, "success");
-          document.getElementById('newClassNumber').value = '';
-          document.getElementById('newClassPasscode').value = '';
-          setTimeout(loadClassListDropdown, 1200);
-        })
-        .catch(() => showToast("Error writing to UserRoles sheet.", "error"));
     }
 
     function handleSignOut() {
@@ -605,8 +558,8 @@
       closeWitchSummaryModal();
       document.getElementById('loginStudentName').value = '';
       document.getElementById('loginStudentPasscode').value = '';
-      document.getElementById('loginTeacherName').value = '';
-      document.getElementById('loginPin').value = '';
+      document.getElementById('loginTeacherUsername').value = '';
+      document.getElementById('loginTeacherPassword').value = '';
       
       document.getElementById('loginGateOverlay').classList.remove('hidden');
       loadClassListDropdown();
@@ -624,6 +577,8 @@
       if (u.role === 'instructor') {
         badge.className = "text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200";
         badge.innerText = "Teacher Portal";
+        // Present the teacher's name dynamically in their dashboard
+        document.getElementById('teacherDashboardName').innerText = u.name;
       } else {
         badge.className = "text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200";
         badge.innerText = "Student Portal";
