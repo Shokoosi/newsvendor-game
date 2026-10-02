@@ -458,11 +458,8 @@
 
   <!-- ================= SCRIPTS ================= -->
   <script>
-    // =========================================================================
-    // YOUR LIVE DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
-    // =========================================================================
+    // Live Deployed Apps Script URL
     const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycKdQ20rfUkoV0Ju98aWGynzZrZkQdx4XG5XBkONVR9KqzzYIJywqZhTssPJUDl7tn/exec";
-    // =========================================================================
 
     const TOTAL_CAMPAIGN_NIGHTS = 30;
 
@@ -577,25 +574,21 @@
 
       if (!cNum || !cPass) return;
 
-      const payload = {
+      const params = new URLSearchParams({
         action: 'addClass',
         classNumber: cNum,
         studentPasscode: cPass,
         pin: '4321'
-      };
+      });
 
-      fetch(GOOGLE_SHEET_WEBAPP_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: JSON.stringify(payload)
-      })
-      .then(() => {
-        showToast(`Saved ${cNum} to UserRoles sheet!`, "success");
-        document.getElementById('newClassNumber').value = '';
-        document.getElementById('newClassPasscode').value = '';
-        setTimeout(loadClassListDropdown, 1500);
-      })
-      .catch(() => showToast("Error writing to UserRoles sheet.", "error"));
+      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?${params.toString()}`)
+        .then(() => {
+          showToast(`Saved ${cNum} to UserRoles sheet!`, "success");
+          document.getElementById('newClassNumber').value = '';
+          document.getElementById('newClassPasscode').value = '';
+          setTimeout(loadClassListDropdown, 1200);
+        })
+        .catch(() => showToast("Error writing to UserRoles sheet.", "error"));
     }
 
     function handleSignOut() {
@@ -875,6 +868,7 @@
       document.getElementById('witchSummaryModal').classList.add('hidden');
     }
 
+    // GET-based submission to bypass CORS restrictions
     function sendSubmissionToGoogleSheet() {
       const sw = appState.studentWitch;
       const u = appState.user;
@@ -885,25 +879,32 @@
       const redPct = totalRounds > 0 ? Math.round((redCount / totalRounds) * 100) : 0;
       const archetype = redPct >= 80 ? 'Optimal EV' : (redPct <= 40 ? 'Maximax Gambler' : 'Explorer');
 
-      const payload = {
+      const compactEncounters = sw.encounters.map(e => ({
+        n: e.night,
+        d: e.door,
+        w: e.witchLocation,
+        c: e.isWitchInRoom,
+        p: e.payoff,
+        b: e.balance
+      }));
+
+      const params = new URLSearchParams({
         action: 'submitStudentLog',
         classNumber: u.classNumber,
         name: u.name,
         payoff: sw.balance,
         redPct: redPct,
         archetype: archetype,
-        encounters: [...sw.encounters]
-      };
-
-      fetch(GOOGLE_SHEET_WEBAPP_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify(payload)
-      }).then(() => {
-        showToast("Saved to StudentLogs sheet!", "success");
-      }).catch(err => {
-        console.warn("Sync error", err);
+        encounters: JSON.stringify(compactEncounters)
       });
+
+      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?${params.toString()}`, { mode: 'no-cors' })
+        .then(() => {
+          showToast("Saved to StudentLogs sheet!", "success");
+        })
+        .catch(err => {
+          console.warn("Sync error", err);
+        });
     }
 
     function fetchGoogleSheetRoster() {
@@ -936,25 +937,34 @@
       if (encounters.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">No encounters recorded for this student.</td></tr>`;
       } else {
-        const sorted = [...encounters].sort((a, b) => a.night - b.night);
-        tbody.innerHTML = sorted.map(e => `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="py-2.5 px-3 font-bold text-slate-700">Night ${e.night}</td>
-            <td class="py-2.5 px-3">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${e.door === 'blue' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-rose-100 text-rose-700 border border-rose-200'}">
-                ${e.door}
-              </span>
-            </td>
-            <td class="py-2.5 px-3 text-slate-600 capitalize">${e.witchLocation}</td>
-            <td class="py-2.5 px-3">
-              ${e.isWitchInRoom 
-                ? `<span class="text-amber-700 font-semibold">Frog Curse</span>` 
-                : `<span class="text-emerald-700 font-semibold">Safe Loot</span>`}
-            </td>
-            <td class="py-2.5 px-3 text-slate-600 text-[11px]">${e.explanation}</td>
-            <td class="py-2.5 px-3 text-right font-bold text-amber-600">+${e.balance.toLocaleString()}</td>
-          </tr>
-        `).join('');
+        const sorted = [...encounters].sort((a, b) => (a.night || a.n) - (b.night || b.n));
+        tbody.innerHTML = sorted.map(e => {
+          const night = e.night || e.n;
+          const door = e.door || e.d;
+          const witchLoc = e.witchLocation || e.w;
+          const caught = (e.isWitchInRoom !== undefined) ? e.isWitchInRoom : e.c;
+          const payoff = e.payoff !== undefined ? e.payoff : e.p;
+          const balance = e.balance !== undefined ? e.balance : e.b;
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="py-2.5 px-3 font-bold text-slate-700">Night ${night}</td>
+              <td class="py-2.5 px-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${door === 'blue' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-rose-100 text-rose-700 border border-rose-200'}">
+                  ${door}
+                </span>
+              </td>
+              <td class="py-2.5 px-3 text-slate-600 capitalize">${witchLoc}</td>
+              <td class="py-2.5 px-3">
+                ${caught 
+                  ? `<span class="text-amber-700 font-semibold">Frog Curse</span>` 
+                  : `<span class="text-emerald-700 font-semibold">Safe Loot</span>`}
+              </td>
+              <td class="py-2.5 px-3 text-slate-600 text-[11px]">${payoff > 0 ? '+' + payoff : payoff}</td>
+              <td class="py-2.5 px-3 text-right font-bold text-amber-600">+${balance.toLocaleString()}</td>
+            </tr>
+          `;
+        }).join('');
       }
 
       document.getElementById('instructorStudentLogModal').classList.remove('hidden');
