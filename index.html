@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newsvendor Classroom - Operations Management Simulation & Analytics</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f8fafc; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .projector-card { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+    .metric-value { font-feature-settings: "tnum" 1, "zero" 1; }
+    .pulse-subtle { animation: pulseSubtle 2s infinite cubic-bezier(0.4, 0, 0.6, 1); }
+    @keyframes pulseSubtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Branding -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Newsvendor<span class="text-brand-600">Sync</span></h1>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">Ops Edu Lab</span>
+          </div>
+          <p class="text-xs text-slate-500 hidden sm:block">Interactive Operations Management & Inventory Simulation</p>
+        </div>
+      </div>
+
+      <!-- Portal Mode Selector -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+          <button id="btnNavInstructor" onclick="setPortalView('instructor')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition bg-white text-brand-700 shadow-xs">
+            <i data-lucide="presentation" class="w-4 h-4"></i>
+            <span class="hidden md:inline">Instructor Hub</span>
+            <span class="md:hidden">Host</span>
+          </button>
+          <button id="btnNavStudent" onclick="setPortalView('student')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition text-slate-600 hover:text-slate-900">
+            <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+            <span class="hidden md:inline">Student Portal</span>
+            <span class="md:hidden">Student</span>
+          </button>
+        </div>
+
+        <!-- Quick Projector Toggle -->
+        <button onclick="toggleProjectorView(true)" class="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 transition text-xs font-medium flex items-center gap-1.5" title="Switch to Fullscreen Classroom Projector Mode">
+          <i data-lucide="monitor" class="w-4 h-4 text-brand-600"></i>
+          <span class="hidden lg:inline">Projector Screen</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs sm:text-sm font-medium">
+    <i data-lucide="info" class="w-4 h-4 text-brand-400"></i>
+    <span id="toastMessage">Classroom updated successfully</span>
+  </div>
+
+  <!-- Confirmation / Action Modal -->
+  <div id="appModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+      <div class="flex items-center gap-3 mb-3 text-slate-900">
+        <div id="modalIconContainer" class="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center">
+          <i data-lucide="help-circle" class="w-5 h-5"></i>
+        </div>
+        <h3 id="modalTitle" class="text-base font-bold text-slate-900">Confirm Action</h3>
+      </div>
+      <p id="modalBody" class="text-xs sm:text-sm text-slate-600 mb-6 leading-relaxed">Are you sure you want to proceed?</p>
+      <div class="flex items-center justify-end gap-2.5">
+        <button onclick="closeAppModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+        <button id="modalConfirmBtn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ======================================================================= -->
+    <!-- PORTAL 1: INSTRUCTOR DASHBOARD                                          -->
+    <!-- ======================================================================= -->
+    <div id="instructorPortal" class="space-y-6">
+      
+      <!-- Top Overview & Global Classroom Action Bar -->
+      <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="bg-slate-900 text-white px-3 py-2 rounded-xl font-mono text-center min-w-[110px]">
+            <span class="text-[10px] uppercase tracking-wider text-slate-400 block font-sans font-semibold">Room Code</span>
+            <span class="text-lg font-bold tracking-wider text-brand-300" id="dispRoomCode">OPS-7021</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base sm:text-lg font-bold text-slate-900">Classroom Control Center</h2>
+              <span id="badgeRoundStatus" class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Round Active
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Round <span class="font-bold text-slate-800" id="dispCurrentRound">1</span> of <span id="dispTotalRounds">10</span> 
+              &bull; <span id="dispSubmittedCount" class="font-semibold text-brand-600">0</span> / <span id="dispEnrolledCount">0</span> Submissions Received
+            </p>
+          </div>
+        </div>
+
+        <!-- Instructor Action Toolbar -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="quickPopulateDemoClassroom()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition flex items-center gap-1.5" title="Generate 14 simulated students with behavioral archetypes">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Load Demo Classroom</span>
+          </button>
+          <button id="btnAdvanceRound" onclick="triggerAdvanceRound()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition flex items-center gap-1.5">
+            <i data-lucide="play" class="w-4 h-4"></i>
+            <span>Resolve & Next Round</span>
+          </button>
+          <button onclick="toggleConfigPanel()" class="px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span>Settings</span>
+          </button>
+          <button onclick="exportClassroomCSV()" class="px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Export CSV</span>
+          </button>
+          <button onclick="confirmResetClassroom()" class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Reset Classroom">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="instructorConfigPanel" class="hidden bg-white rounded-2xl p-6 shadow-sm border border-slate-200 transition-all">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+          <div class="flex items-center gap-2 text-slate-900 font-bold text-sm">
+            <i data-lucide="sliders" class="w-4 h-4 text-brand-600"></i>
+            <span>Market Economics & Simulation Engine Parameters</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="applyPresetPresetEconomic('high')" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100 transition">High Margin (CR ~ 78%)</button>
+            <button onclick="applyPresetPresetEconomic('low')" class="text-xs px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-medium hover:bg-rose-100 transition">Low Margin (CR ~ 29%)</button>
+            <button onclick="applyPresetPresetEconomic('symmetric')" class="text-xs px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition">Symmetric (CR = 50%)</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
+          <div>
+            <label class="block font-medium text-slate-600 mb-1">Room Code</label>
+            <input type="text" id="cfgRoomCode" value="OPS-7021" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono uppercase font-semibold">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-600 mb-1">Selling Price ($p)</label>
+            <input type="number" id="cfgPrice" value="10" step="0.5" min="1" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-600 mb-1">Purchase Cost ($c)</label>
+            <input type="number" id="cfgCost" value="3" step="0.5" min="0" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-600 mb-1">Salvage Value ($s)</label>
+            <input type="number" id="cfgSalvage" value="1" step="0.5" min="0" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-600 mb-1">Stockout Penalty ($g)</label>
+            <input type="number" id="cfgPenalty" value="0" step="0.5" min="0" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-600 mb-1">Demand Model</label>
+            <select id="cfgDistType" onchange="toggleDistInputs()" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
+              <option value="normal">Normal (μ, σ)</option>
+              <option value="uniform">Uniform (a, b)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-600 mb-1">Total Rounds</label>
+            <input type="number" id="cfgTotalRounds" value="10" min="2" max="30" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mt-3 pt-3 border-t border-slate-100 items-end">
+          <div id="boxDistP1">
+            <label class="block font-medium text-slate-600 mb-1" id="lblDistP1">Mean Demand (μ)</label>
+            <input type="number" id="cfgDistP1" value="100" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+          </div>
+          <div id="boxDistP2">
+            <label class="block font-medium text-slate-600 mb-1" id="lblDistP2">Std Deviation (σ)</label>
+            <input type="number" id="cfgDistP2" value="25" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-600 mb-1">Submission Timer (sec)</label>
+            <select id="cfgTimerDuration" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
+              <option value="0">Manual / No Timer</option>
+              <option value="30">30 seconds</option>
+              <option value="60" selected>60 seconds</option>
+              <option value="90">90 seconds</option>
+              <option value="120">120 seconds</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="saveAndApplyConfigs()" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs transition">
+              Apply Settings
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Metrics & Theoretical Benchmark Ribbon -->
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Critical Ratio</span>
+            <i data-lucide="scale" class="w-4 h-4 text-brand-600"></i>
+          </div>
+          <div class="text-xl font-mono font-bold text-slate-900 metric-value" id="statCR">77.8%</div>
+          <div class="text-[10px] text-slate-500 mt-0.5 font-mono">Cu/(Cu+Co)</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Optimal Q*</span>
+            <i data-lucide="target" class="w-4 h-4 text-indigo-600"></i>
+          </div>
+          <div class="text-xl font-mono font-bold text-indigo-600 metric-value" id="statQStar">119</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">Fractile Target</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Class Avg Q</span>
+            <i data-lucide="users" class="w-4 h-4 text-emerald-600"></i>
+          </div>
+          <div class="text-xl font-mono font-bold text-emerald-700 metric-value" id="statClassAvgQ">--</div>
+          <div class="text-[10px] text-slate-500 mt-0.5" id="statPullToCenterDelta">Awaiting orders</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Expected Profit @ Q*</span>
+            <i data-lucide="dollar-sign" class="w-4 h-4 text-amber-600"></i>
+          </div>
+          <div class="text-xl font-mono font-bold text-slate-900 metric-value" id="statExpProfit">$532.50</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">Per-round theoretical</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Avg Class Profit</span>
+            <i data-lucide="wallet" class="w-4 h-4 text-blue-600"></i>
+          </div>
+          <div class="text-xl font-mono font-bold text-blue-600 metric-value" id="statClassAvgProfit">$0.00</div>
+          <div class="text-[10px] text-slate-500 mt-0.5" id="statClassEfficiency">Eff: 0%</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Timer Countdown</span>
+            <i data-lucide="clock" class="w-4 h-4 text-rose-500"></i>
+          </div>
+          <div class="text-xl font-mono font-bold text-slate-900 metric-value" id="statTimerDisp">60s</div>
+          <div class="text-[10px] text-slate-500 mt-0.5" id="statTimerSubtext">Synchronized</div>
+        </div>
+
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Live Class Distribution Chart (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-600"></i>
+                Class Decision Histogram vs. Optimal Target (Round <span id="chartRoundNum">1</span>)
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">Inspect ordering dispersion and identify the pull-to-center bias</p>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="inline-flex items-center gap-1.5 font-medium text-slate-600">
+                <span class="w-3 h-3 rounded bg-indigo-500 inline-block"></span> Student Orders
+              </span>
+              <span class="inline-flex items-center gap-1.5 font-medium text-rose-600">
+                <span class="w-3 h-0.5 bg-rose-500 inline-block"></span> Optimal Q* (<span id="lblChartQStar">119</span>)
+              </span>
+              <span class="inline-flex items-center gap-1.5 font-medium text-slate-400">
+                <span class="w-3 h-0.5 bg-slate-400 inline-block"></span> Mean μ (<span id="lblChartMu">100</span>)
+              </span>
+            </div>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="instructorHistChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Profit Trajectory & Benchmarking (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600"></i>
+                Cumulative Profit Trajectory
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">Class Average vs. Constant Q* Theoretical Baseline</p>
+            </div>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="instructorTrendChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Behavioral Bias Diagnostics Module (4 cols) -->
+        <div class="lg:col-span-4 bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="brain" class="w-4 h-4 text-purple-600"></i>
+              Behavioral Economics Debrief
+            </h3>
+            <span class="text-[10px] px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-semibold border border-purple-200">Live Diagnostics</span>
+          </div>
+
+          <!-- Pull to center indicator -->
+          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/70 space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold">
+              <span class="text-slate-700">Pull-to-Center Magnitude</span>
+              <span id="badgeBiasStatus" class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800">Calculating...</span>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed" id="txtBiasExplanation">
+              Awaiting class submissions to measure systematic deviations between student choices, expected demand (μ), and the critical fractile (Q*).
+            </p>
+          </div>
+
+          <!-- Demand Chasing & Anchoring -->
+          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/70 space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold">
+              <span class="text-slate-700">Demand Chasing (Lag-1 Correlation)</span>
+              <span id="statChasingCorr" class="font-mono text-slate-900">0.00</span>
+            </div>
+            <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+              <div id="barChasingCorr" class="bg-purple-600 h-full rounded-full transition-all duration-300" style="width: 10%;"></div>
+            </div>
+            <p class="text-[11px] text-slate-500">
+              Measures whether students increase orders immediately following high demand and slash orders after low demand (classic overreaction).
+            </p>
+          </div>
+
+          <!-- Mathematical Cheat Sheet / Formula Box -->
+          <div class="p-3.5 bg-gradient-to-br from-brand-50 to-indigo-50/60 rounded-xl border border-brand-100/80 text-xs space-y-1.5 text-slate-700 font-mono">
+            <div class="font-bold font-sans text-brand-900 flex items-center gap-1.5 text-xs mb-1">
+              <i data-lucide="code" class="w-3.5 h-3.5 text-brand-600"></i> Operations Formulas
+            </div>
+            <div class="text-[11px]"><span class="text-slate-500">Underage Cost (Cu):</span> p - c + g = <strong id="mathCu">$7.00</strong></div>
+            <div class="text-[11px]"><span class="text-slate-500">Overage Cost (Co):</span> c - s = <strong id="mathCo">$2.00</strong></div>
+            <div class="text-[11px]"><span class="text-slate-500">Fractile:</span> F(Q*) = Cu / (Cu + Co) = <strong id="mathCR">0.778</strong></div>
+          </div>
+        </div>
+
+        <!-- Student Roster & Live Leaderboard (8 cols) -->
+        <div class="lg:col-span-8 bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="list-ordered" class="w-4 h-4 text-brand-600"></i>
+              <h3 class="text-sm font-bold text-slate-900">Class Roster & Performance Leaderboard</h3>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono" id="dispRosterCount">0 enrolled</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" id="rosterSearch" placeholder="Search student..." oninput="filterRosterTable()" class="px-2.5 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
+            </div>
+          </div>
+
+          <div class="overflow-x-auto max-h-80 overflow-y-auto border border-slate-100 rounded-xl">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="bg-slate-50 text-slate-500 uppercase sticky top-0 border-b border-slate-200 text-[11px]">
+                <tr>
+                  <th class="p-2.5">Rank</th>
+                  <th class="p-2.5">Student Name / ID</th>
+                  <th class="p-2.5">Archetype / Trait</th>
+                  <th class="p-2.5 text-center">Status</th>
+                  <th class="p-2.5 text-right">Last Order (Q)</th>
+                  <th class="p-2.5 text-right">Avg Order</th>
+                  <th class="p-2.5 text-right">Cumulative Profit</th>
+                </tr>
+              </thead>
+              <tbody id="rosterTableBody" class="divide-y divide-slate-100 text-slate-700">
+                <tr class="text-center text-slate-400 py-6">
+                  <td colspan="7" class="py-8 font-sans">
+                    No students enrolled yet. Click <button onclick="quickPopulateDemoClassroom()" class="text-brand-600 underline font-semibold">Load Demo Classroom</button> to add 14 realistic learners instantly, or have students join room <span class="font-mono font-bold text-slate-800" id="emptyTableRoomCode">OPS-7021</span>.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- PORTAL 2: STUDENT INTERFACE                                             -->
+    <!-- ======================================================================= -->
+    <div id="studentPortal" class="space-y-6 hidden">
+
+      <!-- Student Login / Session Connection Banner if not registered -->
+      <div id="studentJoinCard" class="bg-white rounded-2xl p-6 sm:p-8 shadow-md border border-slate-200 max-w-xl mx-auto space-y-5">
+        <div class="text-center space-y-1">
+          <div class="w-12 h-12 bg-brand-100 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="log-in" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900">Join Newsvendor Market</h2>
+          <p class="text-xs text-slate-500">Enter your student credentials to connect to your instructor's room.</p>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Room Code</label>
+            <input type="text" id="studJoinRoom" value="OPS-7021" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono uppercase font-bold text-sm tracking-wider focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Your Full Name</label>
+            <input type="text" id="studJoinName" placeholder="e.g. Alex Morgan" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Student ID / Alias</label>
+            <input type="text" id="studJoinId" placeholder="e.g. STU-1049" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-brand-500">
+          </div>
+        </div>
+
+        <button onclick="handleStudentJoin()" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+          <span>Enter Classroom Session</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Main Student Active Play Desk -->
+      <div id="studentPlayDesk" class="space-y-6 hidden">
+        
+        <!-- Market Conditions & Status Banner -->
+        <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono font-bold text-slate-500" id="studCardName">Student: Alex Morgan</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono" id="studCardId">ID: STU-1049</span>
+            </div>
+            <h2 class="text-lg font-bold text-slate-900 mt-1 flex items-center gap-2">
+              Round <span id="studCurrentRound">1</span> of <span id="studTotalRounds">10</span>
+              <span id="studRoundStatePill" class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold font-sans">Awaiting Order</span>
+            </h2>
+          </div>
+
+          <!-- Market Unit Economics Badges -->
+          <div class="flex flex-wrap items-center gap-3 text-xs font-mono bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <div><span class="text-slate-400">Price (p):</span> <strong id="studPrice">$10.00</strong></div>
+            <div><span class="text-slate-400">Cost (c):</span> <strong id="studCost">$3.00</strong></div>
+            <div><span class="text-slate-400">Salvage (s):</span> <strong id="studSalvage">$1.00</strong></div>
+            <div><span class="text-slate-400">Stockout Pen:</span> <strong id="studPenalty">$0.00</strong></div>
+          </div>
+        </div>
+
+        <!-- Student Interaction & Order Submission Board -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          <!-- Left Order Action Panel (5 cols) -->
+          <div class="lg:col-span-5 space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-xs border border-slate-200 space-y-5">
+              
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Inventory Order Portal</span>
+                <span class="text-xs font-mono font-bold px-2.5 py-1 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 flex items-center gap-1">
+                  <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                  <span id="studTimer">60s</span> left
+                </span>
+              </div>
+
+              <!-- Market Intelligence / Demand Context -->
+              <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 text-xs space-y-2">
+                <div class="flex items-center justify-between font-semibold text-slate-700">
+                  <span class="flex items-center gap-1.5"><i data-lucide="info" class="w-4 h-4 text-brand-600"></i> Market Demand Info</span>
+                  <span class="font-mono text-slate-500" id="studDistSummary">Normal(μ=100, σ=25)</span>
+                </div>
+                <p class="text-[11px] text-slate-500 leading-relaxed">
+                  Daily demand follows an uncertain distribution. Unsold units earn the salvage value ($s); unsatisfied customer demand results in lost margin and penalty.
+                </p>
+                <div id="studHintContainer" class="pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                  <span class="text-slate-500">Theoretical Optimal (Q*):</span>
+                  <span class="font-mono font-bold text-indigo-700" id="studOptimalHint">119 units</span>
+                </div>
+              </div>
+
+              <!-- Interactive Order Controls -->
+              <div class="space-y-3">
+                <label for="studOrderInput" class="text-xs font-bold text-slate-700 block">Choose Order Quantity (Q):</label>
+                <div class="flex items-center gap-3">
+                  <input type="range" id="studOrderSlider" min="20" max="220" value="100" class="w-full accent-brand-600 cursor-pointer h-2 bg-slate-200 rounded-lg" oninput="syncStudentOrder('slider')">
+                  <input type="number" id="studOrderInput" min="0" max="400" value="100" class="w-24 px-3 py-2 text-center text-lg font-mono font-bold border-2 border-brand-500 rounded-xl focus:outline-none" oninput="syncStudentOrder('input')">
+                </div>
+
+                <!-- Fast Preset Buttons -->
+                <div class="grid grid-cols-3 gap-2 pt-1 text-xs font-mono">
+                  <button onclick="setStudentOrderPreset('low')" class="py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-center transition font-medium">Q = 80</button>
+                  <button onclick="setStudentOrderPreset('mean')" class="py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-center transition font-medium">Mean (100)</button>
+                  <button onclick="setStudentOrderPreset('high')" class="py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-center transition font-medium">Q = 125</button>
+                </div>
+              </div>
+
+              <!-- Payoff Estimator Sandbox Preview -->
+              <div class="p-3 bg-brand-50/60 rounded-xl border border-brand-100 text-xs space-y-1.5">
+                <span class="font-bold text-brand-900 block text-[11px] uppercase tracking-wider">Payoff Sandbox If Demand Realizes As:</span>
+                <div class="grid grid-cols-3 gap-2 text-center font-mono pt-1">
+                  <div class="bg-white p-2 rounded-lg border border-brand-100">
+                    <span class="text-[10px] text-slate-400 block">Low (75)</span>
+                    <span class="font-bold text-slate-800" id="payoffLow">$425</span>
+                  </div>
+                  <div class="bg-white p-2 rounded-lg border border-brand-100">
+                    <span class="text-[10px] text-slate-400 block">Expected (100)</span>
+                    <span class="font-bold text-emerald-600" id="payoffMid">$700</span>
+                  </div>
+                  <div class="bg-white p-2 rounded-lg border border-brand-100">
+                    <span class="text-[10px] text-slate-400 block">High (125)</span>
+                    <span class="font-bold text-indigo-600" id="payoffHigh">$700</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <button id="btnStudSubmit" onclick="submitStudentOrder()" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <span id="btnStudSubmitText">Lock In Order for Round 1</span>
+              </button>
+            </div>
+
+            <!-- Student Summary Cards -->
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div class="bg-white p-4 rounded-xl border border-slate-200">
+                <span class="text-slate-400 block text-[11px]">Cumulative Profit</span>
+                <span class="text-lg font-bold font-mono text-emerald-600" id="studCumProfit">$0.00</span>
+              </div>
+              <div class="bg-white p-4 rounded-xl border border-slate-200">
+                <span class="text-slate-400 block text-[11px]">Average Service Level</span>
+                <span class="text-lg font-bold font-mono text-brand-600" id="studServiceLevel">--%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Student Performance Charts & Ledger (7 cols) -->
+          <div class="lg:col-span-7 space-y-6">
+            
+            <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="activity" class="w-4 h-4 text-brand-600"></i>
+                  <h3 class="text-sm font-bold text-slate-900">Your Orders vs. Realized Market Demand</h3>
+                </div>
+                <div class="flex items-center gap-3 text-xs">
+                  <span class="flex items-center gap-1 text-brand-600 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-brand-600 inline-block"></span> Order Q</span>
+                  <span class="flex items-center gap-1 text-slate-700 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-slate-600 inline-block"></span> Demand D</span>
+                </div>
+              </div>
+              <div class="relative h-60 w-full">
+                <canvas id="studentTrajectoryChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Student Round Ledger -->
+            <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="receipt" class="w-4 h-4 text-slate-500"></i>
+                  <h3 class="text-sm font-bold text-slate-900">Personal Round-by-Round Statement</h3>
+                </div>
+              </div>
+              <div class="overflow-x-auto max-h-56 overflow-y-auto">
+                <table class="w-full text-left text-xs font-mono">
+                  <thead class="bg-slate-50 text-slate-500 uppercase sticky top-0 border-b border-slate-200 text-[11px]">
+                    <tr>
+                      <th class="p-2">Rnd</th>
+                      <th class="p-2">Order (Q)</th>
+                      <th class="p-2">Demand</th>
+                      <th class="p-2">Sold</th>
+                      <th class="p-2">Leftover</th>
+                      <th class="p-2">Shortage</th>
+                      <th class="p-2 text-right">Profit</th>
+                      <th class="p-2 text-right">Cumulative</th>
+                    </tr>
+                  </thead>
+                  <tbody id="studentLedgerBody" class="divide-y divide-slate-100 text-slate-700">
+                    <tr class="text-center text-slate-400 py-4">
+                      <td colspan="8" class="py-6 font-sans">No completed rounds yet. Submit an order for Round 1.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <div id="projectorModal" class="fixed inset-0 z-50 bg-slate-950 text-white p-6 sm:p-10 flex flex-col justify-between hidden">
+    
+    <!-- Projector Header -->
+    <div class="flex items-center justify-between pb-6 border-b border-slate-800">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center text-white shadow-lg">
+          <i data-lucide="screen-share" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <span class="text-xs uppercase tracking-widest text-brand-400 font-semibold">Live Classroom Projector View</span>
+          <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            Room Code: <span class="text-brand-300 font-mono" id="projRoomCode">OPS-7021</span>
+            <span class="text-xs px-3 py-1 bg-brand-900/80 border border-brand-500/30 text-brand-200 rounded-full font-sans font-medium" id="projRoundBadge">Round 1 / 10</span>
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="text-right">
+          <span class="text-xs text-slate-400 uppercase tracking-wider block">Round Timer</span>
+          <span class="text-3xl font-mono font-bold text-amber-400" id="projTimer">60s</span>
+        </div>
+        <button onclick="toggleProjectorView(false)" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition" title="Exit Projector View">
+          <i data-lucide="minimize-2" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Projector Central Charts & Stats Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 my-6 flex-1 items-stretch">
+      
+      <!-- Big Histogram for classroom presentation (8 cols) -->
+      <div class="lg:col-span-8 projector-card rounded-3xl p-6 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-lg font-bold text-slate-200 flex items-center gap-2">
+            <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-400"></i>
+            Live Order Distribution vs Theoretical Optimal Q*
+          </h2>
+          <div class="flex items-center gap-4 text-xs font-mono">
+            <span class="text-indigo-400 font-semibold">Q* Optimal: <span id="projQStar">119</span></span>
+            <span class="text-slate-400 font-semibold">Mean Demand μ: <span id="projMu">100</span></span>
+          </div>
+        </div>
+        <div class="relative h-80 w-full flex-1">
+          <canvas id="projectorHistChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Quick Metrics & Top Leaderboard (4 cols) -->
+      <div class="lg:col-span-4 flex flex-col gap-4">
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div class="projector-card p-4 rounded-2xl">
+            <span class="text-xs text-slate-400 block">Submissions</span>
+            <span class="text-2xl font-mono font-bold text-emerald-400" id="projSubmissions">0 / 0</span>
+          </div>
+          <div class="projector-card p-4 rounded-2xl">
+            <span class="text-xs text-slate-400 block">Class Avg Q</span>
+            <span class="text-2xl font-mono font-bold text-brand-400" id="projAvgQ">--</span>
+          </div>
+        </div>
+
+        <div class="projector-card p-5 rounded-2xl flex-1 flex flex-col">
+          <h3 class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 flex items-center gap-1.5">
+            <i data-lucide="trophy" class="w-4 h-4 text-amber-400"></i> Classroom Top Performers
+          </h3>
+          <div class="space-y-2.5 overflow-y-auto flex-1 text-xs font-mono" id="projLeaderboard">
+            <div class="text-slate-500 italic py-4 text-center font-sans">Awaiting round resolution...</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Projector Footer with quick controls -->
+    <div class="flex items-center justify-between pt-4 border-t border-slate-800 text-xs text-slate-400">
+      <div class="flex items-center gap-4">
+        <span>Selling Price: <strong class="text-white" id="projP">$10</strong></span>
+        <span>Unit Cost: <strong class="text-white" id="projC">$3</strong></span>
+        <span>Salvage: <strong class="text-white" id="projS">$1</strong></span>
+        <span>Critical Ratio: <strong class="text-brand-300" id="projCR">77.8%</strong></span>
+      </div>
+      <div>
+        Press <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700 font-mono">Esc</span> or click the minimize icon to return.
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* =========================================================================
+       NEWSCENDOR CORE SIMULATION & BEHAVIORAL STATE ENGINE
+       ========================================================================= */
+
+    // System State Object
+    const state = {
+      portal: 'instructor', // 'instructor' | 'student'
+      roomCode: 'OPS-7021',
+      round: 1,
+      totalRounds: 10,
+      roundStatus: 'active', // 'active' | 'resolved'
+      timerDuration: 60,
+      timeRemaining: 60,
+      timerInterval: null,
+      
+      // Economic Parameters
+      p: 10.0,  // Selling price
+      c: 3.0,   // Cost
+      s: 1.0,   // Salvage
+      g: 0.0,   // Stockout penalty / goodwill
+      
+      // Demand Distribution
+      distType: 'normal', // 'normal' | 'uniform'
+      distP1: 100, // Mean μ or Uniform min
+      distP2: 25,  // Std dev σ or Uniform max
+      
+      // Calculated Optimal Benchmarks
+      cu: 7.0,
+      co: 2.0,
+      criticalRatio: 0.7778,
+      optimalQ: 119,
+      expectedOptimalProfit: 532.50,
+
+      // Synchronized Demand History per round
+      demandHistory: [], // Realized demands for rounds 1..N
+      
+      // Enrolled Student Roster
+      // { id, name, alias, archetype, roundOrders: [Q1, Q2..], roundProfits: [...], submittedCurrent: boolean }
+      students: [],
+
+      // Active student playing in current browser
+      activeStudentId: null,
+
+      // Presentation mode
+      isProjector: false
+    };
+
+    // Chart References
+    let chartHist = null;
+    let chartTrend = null;
+    let chartProjHist = null;
+    let chartStudTraj = null;
+
+    
+    // Approximation of inverse standard normal CDF (Rational approximation by Abramowitz and Stegun)
+    function normInv(p) {
+      if (p <= 0 || p >= 1) return 0;
+      const a1 = -3.969683028665376e+01, a2 = 2.209460984245205e+02;
+      const a3 = -2.759285104469687e+02, a4 = 1.383577518672690e+02;
+      const a5 = -3.066479806614716e+01, a6 = 2.506628277459239e+00;
+
+      const b1 = -5.447609879822406e+01, b2 = 1.615858368580409e+02;
+      const b3 = -1.556989798598866e+02, b4 = 6.680131188771972e+01;
+      const b5 = -1.328068155288572e+01;
+
+      const c1 = -7.784894002430293e-03, c2 = -3.223964580411365e-01;
+      const c3 = -2.400758277161838e+00, c4 = -2.549732539343734e+00;
+      const c5 = 4.374664141464968e+00,  c6 = 2.938163982698783e+00;
+
+      const d1 = 7.784695709041462e-03,  d2 = 3.224671290700398e-01;
+      const d3 = 2.445134137142996e+00,  d4 = 3.754408661907416e+00;
+
+      const p_low = 0.02425, p_high = 1 - p_low;
+      let q, r;
+
+      if (p < p_low) {
+        q = Math.sqrt(-2 * Math.log(p));
+        return (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+               ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+      } else if (p <= p_high) {
+        q = p - 0.5;
+        r = q * q;
+        return (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q /
+               (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+      } else {
+        q = Math.sqrt(-2 * Math.log(1 - p));
+        return -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+                ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+      }
+    }
+
+    // Standard Normal PDF & CDF for Loss function & expected profit
+    function stdNormPdf(x) {
+      return (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * x * x);
+    }
+    
+    function stdNormCdf(x) {
+      const t = 1 / (1 + 0.2316419 * Math.abs(x));
+      const d = 0.3989423 * Math.exp(-x * x / 2);
+      let prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+      if (x > 0) prob = 1 - prob;
+      return prob;
+    }
+
+    // Unit Normal Loss Function: L(z) = phi(z) - z * (1 - Phi(z))
+    function unitNormalLoss(z) {
+      return stdNormPdf(z) - z * (1 - stdNormCdf(z));
+    }
+
+    // Box-Muller random normal sample generator
+    function sampleNormal(mu, sigma) {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+      return Math.max(0, Math.round(mu + z * sigma));
+    }
+
+    function sampleUniform(min, max) {
+      return Math.round(min + Math.random() * (max - min));
+    }
+
+    function recalculateEconomics() {
+      state.cu = state.p - state.c + state.g;
+      state.co = state.c - state.s;
+      
+      const denom = state.cu + state.co;
+      state.criticalRatio = denom > 0 ? (state.cu / denom) : 0.5;
+
+      if (state.distType === 'normal') {
+        const z = normInv(state.criticalRatio);
+        state.optimalQ = Math.round(state.distP1 + z * state.distP2);
+        
+        // Expected Profit at Q*:
+        // E[Profit] = p*E[min(Q,D)] + s*E[max(0, Q-D)] - c*Q - g*E[max(0, D-Q)]
+        // Using expected lost sales formula:
+        const zOpt = (state.optimalQ - state.distP1) / state.distP2;
+        const expectedLostSales = state.distP2 * unitNormalLoss(zOpt);
+        const expectedSales = state.distP1 - expectedLostSales;
+        const expectedLeftover = state.optimalQ - expectedSales;
+        state.expectedOptimalProfit = Math.round(((state.p * expectedSales) + (state.s * expectedLeftover) - (state.c * state.optimalQ) - (state.g * expectedLostSales)) * 100) / 100;
+      } else {
+        // Uniform distribution: Q* = a + CR * (b - a)
+        state.optimalQ = Math.round(state.distP1 + state.criticalRatio * (state.distP2 - state.distP1));
+        state.expectedOptimalProfit = Math.round(((state.p - state.c) * state.distP1 + ((state.p - state.s) * 0.45 * (state.distP2 - state.distP1))) * 100) / 100;
+      }
+
+      updateEconomicDisplays();
+    }
+
+    function calculateProfit(Q, D) {
+      const sold = Math.min(Q, D);
+      const leftover = Math.max(0, Q - D);
+      const shortage = Math.max(0, D - Q);
+      const revenue = sold * state.p;
+      const salvageRev = leftover * state.s;
+      const purchaseCost = Q * state.c;
+      const penaltyCost = shortage * state.g;
+      const profit = (revenue + salvageRev) - purchaseCost - penaltyCost;
+      return {
+        profit: Math.round(profit * 100) / 100,
+        sold,
+        leftover,
+        shortage,
+        revenue,
+        purchaseCost
+      };
+    }
+
+    function updateEconomicDisplays() {
+      const crPct = (state.criticalRatio * 100).toFixed(1) + '%';
+      
+      // Instructor displays
+      document.getElementById('dispRoomCode').innerText = state.roomCode;
+      document.getElementById('emptyTableRoomCode').innerText = state.roomCode;
+      document.getElementById('statCR').innerText = crPct;
+      document.getElementById('statQStar').innerText = state.optimalQ;
+      document.getElementById('lblChartQStar').innerText = state.optimalQ;
+      document.getElementById('lblChartMu').innerText = state.distP1;
+      document.getElementById('statExpProfit').innerText = '$' + state.expectedOptimalProfit.toFixed(2);
+      document.getElementById('mathCu').innerText = '$' + state.cu.toFixed(2);
+      document.getElementById('mathCo').innerText = '$' + state.co.toFixed(2);
+      document.getElementById('mathCR').innerText = state.criticalRatio.toFixed(3);
+
+      // Student displays
+      document.getElementById('studPrice').innerText = '$' + state.p.toFixed(2);
+      document.getElementById('studCost').innerText = '$' + state.c.toFixed(2);
+      document.getElementById('studSalvage').innerText = '$' + state.s.toFixed(2);
+      document.getElementById('studPenalty').innerText = '$' + state.g.toFixed(2);
+      document.getElementById('studDistSummary').innerText = state.distType === 'normal' 
+        ? `Normal(μ=${state.distP1}, σ=${state.distP2})` 
+        : `Uniform(min=${state.distP1}, max=${state.distP2})`;
+      document.getElementById('studOptimalHint').innerText = state.optimalQ + ' units';
+
+      // Projector displays
+      document.getElementById('projRoomCode').innerText = state.roomCode;
+      document.getElementById('projQStar').innerText = state.optimalQ;
+      document.getElementById('projMu').innerText = state.distP1;
+      document.getElementById('projCR').innerText = crPct;
+      document.getElementById('projP').innerText = '$' + state.p.toFixed(2);
+      document.getElementById('projC').innerText = '$' + state.c.toFixed(2);
+      document.getElementById('projS').innerText = '$' + state.s.toFixed(2);
+
+      updateStudentPayoffSandbox();
+    }
+
+    function updateStudentPayoffSandbox() {
+      const qVal = parseInt(document.getElementById('studOrderInput').value) || 100;
+      const lowD = Math.max(0, Math.round(state.distP1 - (state.distType === 'normal' ? state.distP2 : (state.distP2 - state.distP1) / 3)));
+      const midD = Math.round(state.distP1);
+      const highD = Math.round(state.distP1 + (state.distType === 'normal' ? state.distP2 : (state.distP2 - state.distP1) / 3));
+
+      document.getElementById('payoffLow').innerText = '$' + calculateProfit(qVal, lowD).profit.toFixed(0);
+      document.getElementById('payoffMid').innerText = '$' + calculateProfit(qVal, midD).profit.toFixed(0);
+      document.getElementById('payoffHigh').innerText = '$' + calculateProfit(qVal, highD).profit.toFixed(0);
+    }
+
+    function resetAndStartTimer() {
+      if (state.timerInterval) clearInterval(state.timerInterval);
+      if (state.timerDuration <= 0) {
+        document.getElementById('statTimerDisp').innerText = 'Manual';
+        document.getElementById('studTimer').innerText = 'Manual';
+        document.getElementById('projTimer').innerText = 'Manual';
+        return;
+      }
+      state.timeRemaining = state.timerDuration;
+      updateTimerUI();
+
+      state.timerInterval = setInterval(() => {
+        state.timeRemaining--;
+        updateTimerUI();
+        if (state.timeRemaining <= 0) {
+          clearInterval(state.timerInterval);
+          showToast('Time expired for Round ' + state.round + '! Auto-advancing...');
+          triggerAdvanceRound();
+        }
+      }, 1000);
+    }
+
+    function updateTimerUI() {
+      const txt = state.timeRemaining + 's';
+      document.getElementById('statTimerDisp').innerText = txt;
+      document.getElementById('studTimer').innerText = txt;
+      document.getElementById('projTimer').innerText = txt;
+    }
+
+    function quickPopulateDemoClassroom() {
+      const archetypes = [
+        { name: "Emily Watson", alias: "STU-101", type: "Optimal Fractile Solver", bias: "optimal" },
+        { name: "Marcus Chen", alias: "STU-102", type: "Demand Chaser (Reactive)", bias: "chaser" },
+        { name: "Sophia Rodriguez", alias: "STU-103", type: "Naive Mean Orderer", bias: "mean" },
+        { name: "Liam Vance", alias: "STU-104", type: "Aggressive Over-Orderer", bias: "over" },
+        { name: "Zoe Patel", alias: "STU-105", type: "Loss Averse / Under-Orderer", bias: "under" },
+        { name: "Noah Campbell", alias: "STU-106", type: "Pull-to-Center Pragmatist", bias: "center" },
+        { name: "Aria Thorne", alias: "STU-107", type: "Optimal Fractile Solver", bias: "optimal" },
+        { name: "Devon Brooks", alias: "STU-108", type: "Demand Chaser (Reactive)", bias: "chaser" },
+        { name: "Isabella Rossi", alias: "STU-109", type: "Pull-to-Center Pragmatist", bias: "center" },
+        { name: "Lucas Kim", alias: "STU-110", type: "Random Explorer", bias: "random" },
+        { name: "Harper Jenkins", alias: "STU-111", type: "Naive Mean Orderer", bias: "mean" },
+        { name: "Elijah Murphy", alias: "STU-112", type: "Aggressive Over-Orderer", bias: "over" },
+        { name: "Charlotte Diaz", alias: "STU-113", type: "Pull-to-Center Pragmatist", bias: "center" },
+        { name: "Jameson King", alias: "STU-114", type: "Loss Averse / Under-Orderer", bias: "under" }
+      ];
+
+      state.students = archetypes.map(a => ({
+        id: a.alias,
+        name: a.name,
+        alias: a.alias,
+        archetype: a.type,
+        bias: a.bias,
+        roundOrders: [],
+        roundProfits: [],
+        submittedCurrent: false
+      }));
+
+      // Generate order for the current active round for all demo students
+      simulateStudentDecisionsForCurrentRound();
+
+      showToast(`Loaded ${state.students.length} demo students with behavioral profiles.`);
+      renderRosterTable();
+      renderAggregateCharts();
+      analyzeBehavioralBiases();
+      updateHeaderCounts();
+    }
+
+    function simulateStudentDecisionsForCurrentRound() {
+      const rIdx = state.round - 1;
+      const prevDemand = rIdx > 0 ? state.demandHistory[rIdx - 1] : state.distP1;
+
+      state.students.forEach(st => {
+        let q = state.distP1; // baseline mean
+        const noise = (Math.random() - 0.5) * 6; // minor random variation
+
+        switch (st.bias) {
+          case 'optimal':
+            // Knows and applies Q* with tiny human error
+            q = state.optimalQ + (Math.random() - 0.5) * 4;
+            break;
+          case 'mean':
+            // Anchored strictly to mean
+            q = state.distP1 + noise;
+            break;
+          case 'chaser':
+            // Demand chaser: orders heavily based on previous round's demand
+            q = prevDemand * 0.85 + state.distP1 * 0.15 + noise;
+            break;
+          case 'over':
+            // Aggressively fears stockout
+            q = state.optimalQ + 15 + Math.random() * 15;
+            break;
+          case 'under':
+            // Fears excess inventory
+            q = Math.min(state.optimalQ, state.distP1) - 15 + noise;
+            break;
+          case 'center':
+            // Classic Pull-to-Center: falls halfway between mean and Q*
+            q = (state.distP1 + state.optimalQ) / 2 + noise;
+            break;
+          default:
+            q = state.distP1 + (Math.random() - 0.5) * 40;
+            break;
+        }
+
+        q = Math.max(10, Math.round(q));
+        st.roundOrders[rIdx] = q;
+        st.submittedCurrent = true;
+      });
+    }
+
+    function triggerAdvanceRound() {
+      // 1. Ensure a realized demand exists for current round
+      const rIdx = state.round - 1;
+      let realizedD;
+      if (state.demandHistory[rIdx] !== undefined) {
+        realizedD = state.demandHistory[rIdx];
+      } else {
+        realizedD = state.distType === 'normal' 
+          ? sampleNormal(state.distP1, state.distP2) 
+          : sampleUniform(state.distP1, state.distP2);
+        state.demandHistory[rIdx] = realizedD;
+      }
+
+      // 2. Resolve profits for all students
+      state.students.forEach(st => {
+        const orderQ = st.roundOrders[rIdx] !== undefined ? st.roundOrders[rIdx] : state.distP1;
+        const res = calculateProfit(orderQ, realizedD);
+        st.roundProfits[rIdx] = res.profit;
+        st.submittedCurrent = false; // reset for next round
+      });
+
+      // 3. Update active student's personal view if enrolled
+      if (state.activeStudentId) {
+        updateStudentPlayUI();
+      }
+
+      // 4. Check if final round reached
+      if (state.round >= state.totalRounds) {
+        state.roundStatus = 'resolved';
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        document.getElementById('badgeRoundStatus').className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold bg-purple-100 text-purple-700 flex items-center gap-1';
+        document.getElementById('badgeRoundStatus').innerHTML = '<i data-lucide="award" class="w-3.5 h-3.5"></i> Simulation Completed';
+        showToast('All ' + state.totalRounds + ' rounds have concluded! Final analytics ready.');
+      } else {
+        state.round++;
+        // If simulated classroom exists, preload next round decisions
+        simulateStudentDecisionsForCurrentRound();
+        resetAndStartTimer();
+        showToast(`Round ${state.round - 1} completed (Demand: ${realizedD}). Round ${state.round} started.`);
+      }
+
+      // 5. Refresh displays & charts
+      updateHeaderCounts();
+      renderRosterTable();
+      renderAggregateCharts();
+      analyzeBehavioralBiases();
+      lucide.createIcons();
+    }
+
+    function updateHeaderCounts() {
+      document.getElementById('dispCurrentRound').innerText = state.round;
+      document.getElementById('dispTotalRounds').innerText = state.totalRounds;
+      document.getElementById('projRoundBadge').innerText = `Round ${state.round} / ${state.totalRounds}`;
+      
+      const enrolled = state.students.length;
+      const submitted = state.students.filter(s => s.submittedCurrent).length;
+      document.getElementById('dispEnrolledCount').innerText = enrolled;
+      document.getElementById('dispSubmittedCount').innerText = submitted;
+      document.getElementById('dispRosterCount').innerText = `${enrolled} enrolled`;
+      document.getElementById('projSubmissions').innerText = `${submitted} / ${enrolled}`;
+
+      // Calculate class average Q and profit
+      const currentOrders = state.students.map(s => s.roundOrders[state.round - 1]).filter(v => v !== undefined);
+      if (currentOrders.length > 0) {
+        const avgQ = (currentOrders.reduce((a, b) => a + b, 0) / currentOrders.length).toFixed(1);
+        document.getElementById('statClassAvgQ').innerText = avgQ;
+        document.getElementById('projAvgQ').innerText = avgQ;
+      } else {
+        document.getElementById('statClassAvgQ').innerText = '--';
+        document.getElementById('projAvgQ').innerText = '--';
+      }
+
+      // Total average cumulative profit
+      if (state.round > 1 && enrolled > 0) {
+        const allProfits = state.students.map(s => s.roundProfits.reduce((a, b) => a + b, 0));
+        const avgProfit = allProfits.reduce((a, b) => a + b, 0) / enrolled;
+        document.getElementById('statClassAvgProfit').innerText = '$' + avgProfit.toFixed(2);
+        
+        const expectedTotal = state.expectedOptimalProfit * (state.round - 1);
+        const eff = expectedTotal > 0 ? Math.min(100, Math.max(0, (avgProfit / expectedTotal) * 100)).toFixed(1) : '100';
+        document.getElementById('statClassEfficiency').innerText = `Eff: ${eff}% of optimal`;
+      }
+    }
+
+    function analyzeBehavioralBiases() {
+      if (state.students.length === 0) return;
+
+      const currentOrders = state.students.map(s => s.roundOrders[state.round - 1]).filter(v => v !== undefined);
+      if (currentOrders.length === 0) return;
+
+      const avgQ = currentOrders.reduce((a, b) => a + b, 0) / currentOrders.length;
+      const mu = state.distP1;
+      const qStar = state.optimalQ;
+
+      // Pull to center assessment
+      const pullBadge = document.getElementById('badgeBiasStatus');
+      const pullDesc = document.getElementById('txtBiasExplanation');
+      const deltaEl = document.getElementById('statPullToCenterDelta');
+
+      if (Math.abs(qStar - mu) < 2) {
+        pullBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800';
+        pullBadge.innerText = 'Symmetric Market';
+        pullDesc.innerText = 'Because Critical Ratio ~ 50%, optimal Q* aligns with mean demand μ. The pull-to-center effect is neutral in this parameter setting.';
+        deltaEl.innerText = `Δ from Q*: ${(avgQ - qStar).toFixed(1)}`;
+      } else if (qStar > mu) {
+        // High margin market: Human tendency is to under-order towards mean
+        const gapTotal = qStar - mu;
+        const gapActual = qStar - avgQ;
+        const pullPct = Math.max(0, Math.min(100, Math.round((gapActual / gapTotal) * 100)));
+        
+        if (avgQ < qStar - 3) {
+          pullBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800';
+          pullBadge.innerText = `Pull-to-Center Detected (${pullPct}% Shrinkage)`;
+          pullDesc.innerHTML = `In this high-profit setting (Q* = ${qStar} > μ = ${mu}), class average (<strong>${avgQ.toFixed(1)}</strong>) is dragged downward toward mean demand. Students are irrationally under-ordering and sacrificing high-margin sales.`;
+          deltaEl.innerText = `Under-ordering by ${(qStar - avgQ).toFixed(1)} units`;
+        } else {
+          pullBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800';
+          pullBadge.innerText = 'High Rationality';
+          pullDesc.innerText = `Class average (${avgQ.toFixed(1)}) is closely tracking the mathematical optimal fractile Q* (${qStar}). Excellent inventory policy execution!`;
+          deltaEl.innerText = `Optimal alignment (Δ ${(avgQ - qStar).toFixed(1)})`;
+        }
+      } else {
+        // Low margin market: Q* < mu. Human tendency is to over-order towards mean
+        const gapTotal = mu - qStar;
+        const gapActual = avgQ - qStar;
+        const pullPct = Math.max(0, Math.min(100, Math.round((gapActual / gapTotal) * 100)));
+
+        if (avgQ > qStar + 3) {
+          pullBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800';
+          pullBadge.innerText = `Over-Ordering Bias (${pullPct}% Inflation)`;
+          pullDesc.innerHTML = `In this low-margin setting (Q* = ${qStar} < μ = ${mu}), class average (<strong>${avgQ.toFixed(1)}</strong>) is pulled upward toward mean demand. Students are over-stocking and absorbing excessive salvage losses.`;
+          deltaEl.innerText = `Over-ordering by ${(avgQ - qStar).toFixed(1)} units`;
+        } else {
+          pullBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800';
+          pullBadge.innerText = 'High Rationality';
+          pullDesc.innerText = `Class average (${avgQ.toFixed(1)}) is adhering to conservative stocking at Q* (${qStar}).`;
+          deltaEl.innerText = `Optimal alignment (Δ ${(avgQ - qStar).toFixed(1)})`;
+        }
+      }
+
+      // Demand Chasing Lag-1 Correlation
+      if (state.round > 2 && state.demandHistory.length >= 2) {
+        let orderDiffs = [];
+        let demandDiffs = [];
+        for (let r = 1; r < state.round - 1; r++) {
+          const dChange = state.demandHistory[r] - state.demandHistory[r - 1];
+          state.students.forEach(s => {
+            if (s.roundOrders[r + 1] !== undefined && s.roundOrders[r] !== undefined) {
+              const qChange = s.roundOrders[r + 1] - s.roundOrders[r];
+              orderDiffs.push(qChange);
+              demandDiffs.push(dChange);
+            }
+          });
+        }
+
+        if (orderDiffs.length > 5) {
+          const corr = computePearsonCorrelation(demandDiffs, orderDiffs);
+          const corrDisp = isNaN(corr) ? 0.0 : corr;
+          document.getElementById('statChasingCorr').innerText = corrDisp.toFixed(2);
+          const barWidth = Math.max(5, Math.min(100, Math.round(((corrDisp + 1) / 2) * 100)));
+          document.getElementById('barChasingCorr').style.width = barWidth + '%';
+        }
+      }
+    }
+
+    function computePearsonCorrelation(x, y) {
+      const n = x.length;
+      if (n === 0) return 0;
+      const mx = x.reduce((a, b) => a + b, 0) / n;
+      const my = y.reduce((a, b) => a + b, 0) / n;
+      let num = 0, den1 = 0, den2 = 0;
+      for (let i = 0; i < n; i++) {
+        const dx = x[i] - mx;
+        const dy = y[i] - my;
+        num += dx * dy;
+        den1 += dx * dx;
+        den2 += dy * dy;
+      }
+      const den = Math.sqrt(den1 * den2);
+      return den === 0 ? 0 : num / den;
+    }
+
+    function renderRosterTable() {
+      const tbody = document.getElementById('rosterTableBody');
+      const projLeader = document.getElementById('projLeaderboard');
+      
+      if (state.students.length === 0) {
+        tbody.innerHTML = `
+          <tr class="text-center text-slate-400 py-6">
+            <td colspan="7" class="py-8 font-sans">
+              No students enrolled yet. Click <button onclick="quickPopulateDemoClassroom()" class="text-brand-600 underline font-semibold">Load Demo Classroom</button> to add 14 realistic learners instantly.
+            </td>
+          </tr>
+        `;
+        projLeader.innerHTML = `<div class="text-slate-500 italic py-4 text-center font-sans">Awaiting round resolution...</div>`;
+        return;
+      }
+
+      // Sort by cumulative profit descending
+      const sorted = [...state.students].map(s => {
+        const totalProfit = s.roundProfits.reduce((a, b) => a + b, 0);
+        const orderHistory = s.roundOrders.filter(v => v !== undefined);
+        const avgOrder = orderHistory.length > 0 ? (orderHistory.reduce((a, b) => a + b, 0) / orderHistory.length).toFixed(1) : '--';
+        const lastOrder = s.roundOrders[state.round - 1] !== undefined ? s.roundOrders[state.round - 1] : '--';
+        return {
+          ...s,
+          totalProfit,
+          avgOrder,
+          lastOrder
+        };
+      }).sort((a, b) => b.totalProfit - a.totalProfit);
+
+      // Render Dashboard Roster Table
+      tbody.innerHTML = sorted.map((st, idx) => {
+        const rank = idx + 1;
+        const rankBadge = rank === 1 ? '🥇 #1' : rank === 2 ? '🥈 #2' : rank === 3 ? '🥉 #3' : `#${rank}`;
+        const statusBadge = st.submittedCurrent 
+          ? `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold">Submitted</span>` 
+          : `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-semibold">Pending</span>`;
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="p-2.5 font-bold text-slate-900">${rankBadge}</td>
+            <td class="p-2.5">
+              <span class="font-bold text-slate-900 font-sans block">${st.name}</span>
+              <span class="text-slate-400 text-[10px] font-mono">${st.alias}</span>
+            </td>
+            <td class="p-2.5 text-slate-600 font-sans text-xs">
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] font-medium">${st.archetype}</span>
+            </td>
+            <td class="p-2.5 text-center">${statusBadge}</td>
+            <td class="p-2.5 text-right font-bold text-slate-800">${st.lastOrder}</td>
+            <td class="p-2.5 text-right text-slate-600">${st.avgOrder}</td>
+            <td class="p-2.5 text-right font-bold ${st.totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}">$${st.totalProfit.toFixed(2)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Render Projector Top 6 Leaderboard
+      projLeader.innerHTML = sorted.slice(0, 6).map((st, idx) => `
+        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="w-6 text-center font-bold text-amber-400">#${idx + 1}</span>
+            <span class="font-sans font-medium text-slate-200">${st.name}</span>
+          </div>
+          <span class="font-mono font-bold text-emerald-400">$${st.totalProfit.toFixed(0)}</span>
+        </div>
+      `).join('');
+    }
+
+    function filterRosterTable() {
+      const q = document.getElementById('rosterSearch').value.toLowerCase();
+      const rows = document.querySelectorAll('#rosterTableBody tr');
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+
+    function renderAggregateCharts() {
+      renderHistogramChart();
+      renderCumulativeTrendChart();
+    }
+
+    function renderHistogramChart() {
+      const ctx = document.getElementById('instructorHistChart').getContext('2d');
+      const projCtx = document.getElementById('projectorHistChart').getContext('2d');
+      
+      document.getElementById('chartRoundNum').innerText = state.round;
+
+      // Extract current round orders
+      const orders = state.students
+        .map(s => s.roundOrders[state.round - 1])
+        .filter(v => v !== undefined && v !== null);
+
+      // Create bins [30-50, 50-70, 70-90, 90-110, 110-130, 130-150, 150-170, 170-200]
+      const bins = [
+        { label: '<60', min: 0, max: 59, count: 0 },
+        { label: '60-79', min: 60, max: 79, count: 0 },
+        { label: '80-99', min: 80, max: 99, count: 0 },
+        { label: '100-119', min: 100, max: 119, count: 0 },
+        { label: '120-139', min: 120, max: 139, count: 0 },
+        { label: '140-159', min: 140, max: 159, count: 0 },
+        { label: '160+', min: 160, max: 9999, count: 0 }
+      ];
+
+      orders.forEach(q => {
+        for (const b of bins) {
+          if (q >= b.min && q <= b.max) {
+            b.count++;
+            break;
+          }
+        }
+      });
+
+      const labels = bins.map(b => b.label);
+      const dataCounts = bins.map(b => b.count);
+
+      // Data setup
+      const chartConfig = {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Students Count',
+            data: dataCounts,
+            backgroundColor: 'rgba(99, 102, 241, 0.75)',
+            borderColor: 'rgb(79, 70, 229)',
+            borderWidth: 1.5,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => `Order Range: ${items[0].label} units`,
+                label: (item) => `Submissions: ${item.raw} students`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      };
+
+      if (chartHist) chartHist.destroy();
+      chartHist = new Chart(ctx, chartConfig);
+
+      // Projector version (Dark Theme)
+      const projConfig = JSON.parse(JSON.stringify(chartConfig));
+      projConfig.data.datasets[0].backgroundColor = 'rgba(129, 140, 248, 0.85)';
+      projConfig.data.datasets[0].borderColor = '#a5b4fc';
+      projConfig.options.scales.x = { ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(255,255,255,0.06)' } };
+      projConfig.options.scales.y = { ticks: { color: '#cbd5e1', precision: 0 }, grid: { color: 'rgba(255,255,255,0.06)' } };
+
+      if (chartProjHist) chartProjHist.destroy();
+      chartProjHist = new Chart(projCtx, projConfig);
+    }
+
+    function renderCumulativeTrendChart() {
+      const ctx = document.getElementById('instructorTrendChart').getContext('2d');
+      const maxR = Math.max(1, state.round - 1);
+      const roundLabels = Array.from({ length: maxR }, (_, i) => `Rnd ${i + 1}`);
+
+      // Optimal expected profit curve
+      let cumOpt = 0;
+      const optCurve = roundLabels.map(() => {
+        cumOpt += state.expectedOptimalProfit;
+        return cumOpt;
+      });
+
+      // Class average profit curve
+      let cumClass = 0;
+      const classCurve = roundLabels.map((_, rIdx) => {
+        if (state.students.length === 0) return 0;
+        const profitsThisRound = state.students
+          .map(s => s.roundProfits[rIdx])
+          .filter(v => v !== undefined);
+        const avgRoundProfit = profitsThisRound.length > 0 
+          ? (profitsThisRound.reduce((a, b) => a + b, 0) / profitsThisRound.length) 
+          : 0;
+        cumClass += avgRoundProfit;
+        return Math.round(cumClass);
+      });
+
+      if (chartTrend) chartTrend.destroy();
+      chartTrend = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: roundLabels.length > 0 ? roundLabels : ['Rnd 1'],
+          datasets: [
+            {
+              label: 'Class Average',
+              data: classCurve.length > 0 ? classCurve : [0],
+              borderColor: 'rgb(16, 185, 129)',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.25,
+              fill: true,
+              pointRadius: 4
+            },
+            {
+              label: 'Theoretical Optimal Q*',
+              data: optCurve.length > 0 ? optCurve : [state.expectedOptimalProfit],
+              borderColor: 'rgb(99, 102, 241)',
+              borderDash: [5, 5],
+              borderWidth: 2,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { boxWidth: 12, font: { size: 11 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: $${ctx.raw.toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => '$' + v }
+            }
+          }
+        }
+      });
+    }
+
+    function setPortalView(mode) {
+      state.portal = mode;
+      const instView = document.getElementById('instructorPortal');
+      const studView = document.getElementById('studentPortal');
+      const btnInst = document.getElementById('btnNavInstructor');
+      const btnStud = document.getElementById('btnNavStudent');
+
+      if (mode === 'instructor') {
+        instView.classList.remove('hidden');
+        studView.classList.add('hidden');
+        btnInst.className = 'px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition bg-white text-brand-700 shadow-xs font-semibold';
+        btnStud.className = 'px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition text-slate-600 hover:text-slate-900';
+      } else {
+        instView.classList.add('hidden');
+        studView.classList.remove('hidden');
+        btnStud.className = 'px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition bg-white text-brand-700 shadow-xs font-semibold';
+        btnInst.className = 'px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition text-slate-600 hover:text-slate-900';
+        
+        if (state.activeStudentId) {
+          updateStudentPlayUI();
+        }
+      }
+    }
+
+    function handleStudentJoin() {
+      const code = document.getElementById('studJoinRoom').value.trim().toUpperCase();
+      const name = document.getElementById('studJoinName').value.trim() || 'Alex Morgan';
+      const alias = document.getElementById('studJoinId').value.trim() || 'STU-1049';
+
+      if (code !== state.roomCode) {
+        showToast('Room not found. Current active room is ' + state.roomCode);
+        return;
+      }
+
+      state.activeStudentId = alias;
+      
+      // Check if student already enrolled in roster
+      let st = state.students.find(s => s.alias === alias);
+      if (!st) {
+        st = {
+          id: alias,
+          name: name,
+          alias: alias,
+          archetype: 'Live Human Player',
+          bias: 'human',
+          roundOrders: [],
+          roundProfits: [],
+          submittedCurrent: false
+        };
+        state.students.push(st);
+      }
+
+      document.getElementById('studentJoinCard').classList.add('hidden');
+      document.getElementById('studentPlayDesk').classList.remove('hidden');
+      
+      document.getElementById('studCardName').innerText = `Student: ${name}`;
+      document.getElementById('studCardId').innerText = `ID: ${alias}`;
+
+      updateStudentPlayUI();
+      updateHeaderCounts();
+      renderRosterTable();
+      showToast(`Welcome, ${name}! Joined room ${code}.`);
+    }
+
+    function syncStudentOrder(source) {
+      const slider = document.getElementById('studOrderSlider');
+      const input = document.getElementById('studOrderInput');
+      if (source === 'slider') {
+        input.value = slider.value;
+      } else {
+        slider.value = input.value;
+      }
+      updateStudentPayoffSandbox();
+    }
+
+    function setStudentOrderPreset(type) {
+      const input = document.getElementById('studOrderInput');
+      const slider = document.getElementById('studOrderSlider');
+      let val = state.distP1;
+      if (type === 'low') val = Math.round(state.distP1 * 0.8);
+      if (type === 'high') val = Math.round(state.distP1 * 1.25);
+      input.value = val;
+      slider.value = val;
+      updateStudentPayoffSandbox();
+    }
+
+    function submitStudentOrder() {
+      if (!state.activeStudentId) return;
+      const st = state.students.find(s => s.alias === state.activeStudentId);
+      if (!st) return;
+
+      const orderVal = parseInt(document.getElementById('studOrderInput').value) || state.distP1;
+      st.roundOrders[state.round - 1] = orderVal;
+      st.submittedCurrent = true;
+
+      // Update student UI lock state
+      document.getElementById('studRoundStatePill').className = 'text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-semibold font-sans';
+      document.getElementById('studRoundStatePill').innerText = `Order Locked (${orderVal} units)`;
+      document.getElementById('btnStudSubmit').classList.replace('bg-brand-600', 'bg-slate-700');
+      document.getElementById('btnStudSubmitText').innerText = `Order Submitted (${orderVal} units) - Awaiting Next Round`;
+
+      showToast(`Order for ${orderVal} units locked in!`);
+      updateHeaderCounts();
+      renderRosterTable();
+      renderHistogramChart();
+    }
+
+    function updateStudentPlayUI() {
+      if (!state.activeStudentId) return;
+      const st = state.students.find(s => s.alias === state.activeStudentId);
+      if (!st) return;
+
+      document.getElementById('studCurrentRound').innerText = state.round;
+      document.getElementById('studTotalRounds').innerText = state.totalRounds;
+
+      // Submission status check
+      if (st.submittedCurrent) {
+        const myOrder = st.roundOrders[state.round - 1];
+        document.getElementById('studRoundStatePill').className = 'text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-semibold font-sans';
+        document.getElementById('studRoundStatePill').innerText = `Order Locked (${myOrder} units)`;
+        document.getElementById('btnStudSubmitText').innerText = `Order Submitted (${myOrder} units) - Awaiting Resolution`;
+      } else {
+        document.getElementById('studRoundStatePill').className = 'text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold font-sans';
+        document.getElementById('studRoundStatePill').innerText = 'Awaiting Order';
+        document.getElementById('btnStudSubmit').classList.replace('bg-slate-700', 'bg-brand-600');
+        document.getElementById('btnStudSubmitText').innerText = `Lock In Order for Round ${state.round}`;
+      }
+
+      // Populate personal round ledger
+      const tbody = document.getElementById('studentLedgerBody');
+      const completedRounds = state.round - 1;
+
+      if (completedRounds === 0) {
+        tbody.innerHTML = `
+          <tr class="text-center text-slate-400 py-4">
+            <td colspan="8" class="py-6 font-sans">No completed rounds yet. Submit an order for Round 1.</td>
+          </tr>
+        `;
+        document.getElementById('studCumProfit').innerText = '$0.00';
+        document.getElementById('studServiceLevel').innerText = '--%';
+      } else {
+        let runningProfit = 0;
+        let totalSold = 0;
+        let totalDemand = 0;
+
+        let rowsHtml = '';
+        for (let r = 0; r < completedRounds; r++) {
+          const myQ = st.roundOrders[r] || 0;
+          const myD = state.demandHistory[r] || 0;
+          const res = calculateProfit(myQ, myD);
+          runningProfit += res.profit;
+          totalSold += res.sold;
+          totalDemand += myD;
+
+          rowsHtml += `
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 font-bold text-slate-900">${r + 1}</td>
+              <td class="p-2 font-bold text-brand-600">${myQ}</td>
+              <td class="p-2 text-slate-700">${myD}</td>
+              <td class="p-2 text-emerald-700">${res.sold}</td>
+              <td class="p-2 text-amber-600">${res.leftover}</td>
+              <td class="p-2 text-rose-600">${res.shortage}</td>
+              <td class="p-2 text-right font-bold ${res.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}">$${res.profit.toFixed(2)}</td>
+              <td class="p-2 text-right font-bold text-slate-900">$${runningProfit.toFixed(2)}</td>
+            </tr>
+          `;
+        }
+        tbody.innerHTML = rowsHtml;
+        document.getElementById('studCumProfit').innerText = '$' + runningProfit.toFixed(2);
+        
+        const sl = totalDemand > 0 ? ((totalSold / totalDemand) * 100).toFixed(1) : '100.0';
+        document.getElementById('studServiceLevel').innerText = sl + '%';
+      }
+
+      // Render student trajectory chart
+      renderStudentTrajectoryChart(st);
+    }
+
+    function renderStudentTrajectoryChart(st) {
+      const ctx = document.getElementById('studentTrajectoryChart').getContext('2d');
+      const completedR = Math.max(1, state.round - 1);
+      const labels = Array.from({ length: completedR }, (_, i) => `Rnd ${i + 1}`);
+
+      const orderData = labels.map((_, i) => st.roundOrders[i] !== undefined ? st.roundOrders[i] : null);
+      const demandData = labels.map((_, i) => state.demandHistory[i] !== undefined ? state.demandHistory[i] : null);
+
+      if (chartStudTraj) chartStudTraj.destroy();
+      chartStudTraj = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Your Order (Q)',
+              data: orderData,
+              borderColor: 'rgb(79, 70, 229)',
+              backgroundColor: 'rgb(79, 70, 229)',
+              borderWidth: 2,
+              tension: 0.2,
+              pointRadius: 4
+            },
+            {
+              label: 'Market Demand (D)',
+              data: demandData,
+              borderColor: 'rgb(100, 116, 139)',
+              backgroundColor: 'rgb(100, 116, 139)',
+              borderDash: [4, 4],
+              borderWidth: 2,
+              tension: 0.2,
+              pointRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function toggleConfigPanel() {
+      const el = document.getElementById('instructorConfigPanel');
+      el.classList.toggle('hidden');
+    }
+
+    function toggleDistInputs() {
+      const type = document.getElementById('cfgDistType').value;
+      const lbl1 = document.getElementById('lblDistP1');
+      const lbl2 = document.getElementById('lblDistP2');
+      if (type === 'normal') {
+        lbl1.innerText = 'Mean Demand (μ)';
+        lbl2.innerText = 'Std Deviation (σ)';
+      } else {
+        lbl1.innerText = 'Min Demand (a)';
+        lbl2.innerText = 'Max Demand (b)';
+      }
+    }
+
+    function applyPresetPresetEconomic(tier) {
+      if (tier === 'high') {
+        document.getElementById('cfgPrice').value = '10';
+        document.getElementById('cfgCost').value = '3';
+        document.getElementById('cfgSalvage').value = '1';
+        document.getElementById('cfgPenalty').value = '0';
+      } else if (tier === 'low') {
+        document.getElementById('cfgPrice').value = '10';
+        document.getElementById('cfgCost').value = '8';
+        document.getElementById('cfgSalvage').value = '2';
+        document.getElementById('cfgPenalty').value = '0';
+      } else {
+        document.getElementById('cfgPrice').value = '10';
+        document.getElementById('cfgCost').value = '6';
+        document.getElementById('cfgSalvage').value = '2';
+        document.getElementById('cfgPenalty').value = '0';
+      }
+    }
+
+    function saveAndApplyConfigs() {
+      state.roomCode = document.getElementById('cfgRoomCode').value.trim().toUpperCase() || 'OPS-7021';
+      state.p = parseFloat(document.getElementById('cfgPrice').value) || 10;
+      state.c = parseFloat(document.getElementById('cfgCost').value) || 3;
+      state.s = parseFloat(document.getElementById('cfgSalvage').value) || 1;
+      state.g = parseFloat(document.getElementById('cfgPenalty').value) || 0;
+      state.distType = document.getElementById('cfgDistType').value;
+      state.distP1 = parseFloat(document.getElementById('cfgDistP1').value) || 100;
+      state.distP2 = parseFloat(document.getElementById('cfgDistP2').value) || 25;
+      state.totalRounds = parseInt(document.getElementById('cfgTotalRounds').value) || 10;
+      state.timerDuration = parseInt(document.getElementById('cfgTimerDuration').value);
+
+      recalculateEconomics();
+      resetAndStartTimer();
+      toggleConfigPanel();
+      renderAggregateCharts();
+      showToast('Simulation parameters updated successfully.');
+    }
+
+    function toggleProjectorView(open) {
+      state.isProjector = open;
+      const modal = document.getElementById('projectorModal');
+      if (open) {
+        modal.classList.remove('hidden');
+        renderHistogramChart();
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    // Keyboard shortcut to close projector
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && state.isProjector) {
+        toggleProjectorView(false);
+      }
+    });
+
+    function confirmResetClassroom() {
+      openAppModal(
+        'Reset Entire Classroom?',
+        'This will erase all student submissions, generated round demands, and leaderboard scores. Are you sure?',
+        () => {
+          state.round = 1;
+          state.roundStatus = 'active';
+          state.demandHistory = [];
+          state.students = [];
+          state.activeStudentId = null;
+          
+          recalculateEconomics();
+          resetAndStartTimer();
+          updateHeaderCounts();
+          renderRosterTable();
+          renderAggregateCharts();
+          showToast('Classroom reset. Ready for a new cohort!');
+        }
+      );
+    }
+
+    function openAppModal(title, message, onConfirm) {
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalBody').innerText = message;
+      const btn = document.getElementById('modalConfirmBtn');
+      btn.onclick = () => {
+        closeAppModal();
+        if (onConfirm) onConfirm();
+      };
+      document.getElementById('appModal').classList.remove('hidden');
+    }
+
+    function closeAppModal() {
+      document.getElementById('appModal').classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').innerText = msg;
+      toast.classList.remove('opacity-0', 'translate-y-20', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-20', 'pointer-events-none');
+      }, 3200);
+    }
+
+    function exportClassroomCSV() {
+      if (state.students.length === 0 || state.round <= 1) {
+        showToast('No round data available to export yet.');
+        return;
+      }
+
+      let csv = 'Round,StudentID,StudentName,Archetype,OrderQ,RealizedDemand,UnitsSold,Leftovers,Shortage,Profit,CumProfit\n';
+      const completedRounds = state.round - 1;
+
+      for (let r = 0; r < completedRounds; r++) {
+        const d = state.demandHistory[r] || 0;
+        state.students.forEach(st => {
+          const q = st.roundOrders[r] || 0;
+          const res = calculateProfit(q, d);
+          const cum = st.roundProfits.slice(0, r + 1).reduce((a, b) => a + b, 0);
+          csv += `${r + 1},"${st.alias}","${st.name}","${st.archetype}",${q},${d},${res.sold},${res.leftover},${res.shortage},${res.profit},${cum}\n`;
+        });
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `newsvendor_${state.roomCode}_round_${completedRounds}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Exported classroom data to CSV!');
+    }
+
+    window.onload = function() {
+      recalculateEconomics();
+      quickPopulateDemoClassroom();
+      resetAndStartTimer();
+      lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
