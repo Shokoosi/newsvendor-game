@@ -49,20 +49,20 @@
         </div>
         <div>
           <div class="flex items-center justify-between mb-1">
-            <label class="text-xs font-semibold text-slate-600">Class Code</label>
+            <label class="text-xs font-semibold text-slate-600">Select Section / Class</label>
             <button type="button" onclick="loadClassListDropdown()" class="text-[10px] text-indigo-600 hover:underline flex items-center gap-0.5">
               <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh classes
             </button>
           </div>
           <select id="loginStudentClass" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white font-mono-num transition">
-            <option value="">Select your class</option>
+            <option value="">Select your class & teacher</option>
           </select>
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Class Passcode</label>
           <input type="password" id="loginStudentPasscode" placeholder="Enter class passcode" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white font-mono-num transition">
         </div>
-        <p class="text-[11px] text-slate-500 leading-tight">Your 30-night campaign runs once and saves permanently to your class record.</p>
+        <p class="text-[11px] text-slate-500 leading-tight">Your 30-night campaign runs once and saves permanently to your teacher's record.</p>
         <button type="submit" class="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition">
           Enter Simulation <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
@@ -71,7 +71,7 @@
       <!-- Teacher Sign In Form (Username + Password) -->
       <form id="formInstructorLogin" onsubmit="handleInstructorLogin(event)" class="space-y-4 hidden">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Username</label>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Teacher Username</label>
           <input type="text" id="loginTeacherUsername" required placeholder="Enter username" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white transition">
         </div>
         <div>
@@ -219,7 +219,7 @@
       <div id="campaignDoneBanner" class="hidden bg-emerald-50 border border-emerald-300 rounded-2xl p-4 text-center">
         <p class="text-emerald-800 font-bold text-sm flex items-center justify-center gap-2">
           <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>
-          30-Night Campaign Finalized & Submitted to StudentLogs Sheet!
+          30-Night Campaign Finalized & Submitted to Your Teacher's Sheet!
         </p>
         <p class="text-xs text-emerald-700 mt-1">Single-attempt campaign policy: choices are permanent.</p>
       </div>
@@ -270,7 +270,7 @@
     <!-- ================= TEACHER PANEL ================= -->
     <div id="witchInstructorPortal" class="space-y-6 hidden">
       
-      <!-- Teacher Header Showing Teacher Name -->
+      <!-- Teacher Header -->
       <div class="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
         <div>
           <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200">
@@ -279,11 +279,11 @@
           <h2 class="text-2xl font-black text-slate-900 tracking-tight mt-1">
             Welcome, <span id="teacherDashboardName" class="text-purple-700">Teacher</span>
           </h2>
-          <p class="text-xs text-slate-500 mt-0.5">Decision Sciences Classroom & Course Hub</p>
+          <p class="text-xs text-slate-500 mt-0.5" id="teacherUsernameSub">Username: --</p>
         </div>
         <div class="flex items-center gap-2">
           <button onclick="fetchGoogleSheetRoster()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync Student Logs
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync My Students
           </button>
         </div>
       </div>
@@ -333,8 +333,8 @@
       <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="text-sm font-bold text-slate-900">StudentLogs Roster</h3>
-            <p class="text-xs text-slate-500">Live submissions recorded from student devices</p>
+            <h3 class="text-sm font-bold text-slate-900">Your Student Roster</h3>
+            <p class="text-xs text-slate-500">Live submissions recorded exclusively for your sections</p>
           </div>
           <span id="winstStudentCount" class="text-xs font-mono-num px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-semibold">0 Submissions</span>
         </div>
@@ -352,7 +352,7 @@
             </thead>
             <tbody id="winstRosterBody" class="divide-y divide-slate-100 font-mono-num">
               <tr>
-                <td colspan="6" class="py-6 text-center text-slate-400">No student logs yet. Click 'Sync Student Logs' above.</td>
+                <td colspan="6" class="py-6 text-center text-slate-400">No submissions found for your account. Click 'Sync My Students' above.</td>
               </tr>
             </tbody>
           </table>
@@ -402,38 +402,36 @@
 
   <!-- ================= 30-NIGHT CAMPAIGN MODAL ================= -->
   <div id="witchSummaryModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative">
-      <div class="text-center space-y-2 mb-6">
-        <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto text-2xl font-black">
-          <i data-lucide="trophy" class="w-8 h-8"></i>
-        </div>
-        <h3 class="text-2xl font-black text-slate-900">Campaign Concluded!</h3>
-        <p class="text-xs text-slate-500">30 Halloween Nights Completed. Score submitted to teacher.</p>
+    <div class="text-center space-y-2 mb-6">
+      <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto text-2xl font-black">
+        <i data-lucide="trophy" class="w-8 h-8"></i>
       </div>
-
-      <div class="grid grid-cols-2 gap-3 mb-6">
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center">
-          <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">Your Total Coins</span>
-          <span id="modalFinalCoins" class="text-2xl font-black text-amber-600 font-mono-num">0</span>
-        </div>
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center">
-          <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">EV Efficiency</span>
-          <span id="modalEfficiency" class="text-2xl font-black text-emerald-600 font-mono-num">0%</span>
-        </div>
-      </div>
-
-      <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-6 text-xs space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="font-bold text-slate-900">Behavioral Classification:</span>
-          <span id="modalArchetypeBadge" class="px-2 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-700">Evaluating...</span>
-        </div>
-        <p id="modalArchetypeExplanation" class="text-slate-600 leading-relaxed"></p>
-      </div>
-
-      <button onclick="closeWitchSummaryModal()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
-        <i data-lucide="check" class="w-4 h-4"></i> View Campaign Log
-      </button>
+      <h3 class="text-2xl font-black text-slate-900">Campaign Concluded!</h3>
+      <p class="text-xs text-slate-500">30 Halloween Nights Completed. Score submitted to teacher.</p>
     </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-6">
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center">
+        <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">Your Total Coins</span>
+        <span id="modalFinalCoins" class="text-2xl font-black text-amber-600 font-mono-num">0</span>
+      </div>
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center">
+        <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">EV Efficiency</span>
+        <span id="modalEfficiency" class="text-2xl font-black text-emerald-600 font-mono-num">0%</span>
+      </div>
+    </div>
+
+    <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-6 text-xs space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="font-bold text-slate-900">Behavioral Classification:</span>
+        <span id="modalArchetypeBadge" class="px-2 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-700">Evaluating...</span>
+      </div>
+      <p id="modalArchetypeExplanation" class="text-slate-600 leading-relaxed"></p>
+    </div>
+
+    <button onclick="closeWitchSummaryModal()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
+      <i data-lucide="check" class="w-4 h-4"></i> View Campaign Log
+    </button>
   </div>
 
   <div id="toastContainer" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
@@ -449,7 +447,7 @@
     }
 
     const appState = {
-      user: null, // { role: 'student'|'instructor', name: string, classNumber: string }
+      user: null, // { role: 'student'|'instructor', name: string, classNumber?: string, teacherUsername?: string, username?: string }
       studentWitch: getFreshStudentState(),
       classWitchStudents: [],
       availableClasses: []
@@ -486,7 +484,12 @@
         })
         .catch(err => {
           console.warn("Using fallback class list", err);
-          appState.availableClasses = [{ classNumber: "ROOM-101", passcode: "WITCH1" }];
+          appState.availableClasses = [{ 
+            classNumber: "ROOM-101", 
+            teacherName: "Dr. Sina Shokoohyar", 
+            teacherUsername: "sina", 
+            passcode: "WITCH1" 
+          }];
           populateDropdown(appState.availableClasses);
         });
     }
@@ -497,32 +500,39 @@
         dropdown.innerHTML = `<option value="">No classes found in UserRoles</option>`;
         return;
       }
-      dropdown.innerHTML = list.map(c => `<option value="${c.classNumber}">${c.classNumber}</option>`).join('');
+      dropdown.innerHTML = list.map((c, idx) => `
+        <option value="${idx}">${c.classNumber} — ${c.teacherName}</option>
+      `).join('');
     }
 
     function handleStudentLogin(e) {
       e.preventDefault();
       const name = document.getElementById('loginStudentName').value.trim();
-      const classNum = document.getElementById('loginStudentClass').value;
+      const selectedIdx = document.getElementById('loginStudentClass').value;
       const pass = document.getElementById('loginStudentPasscode').value.trim();
 
-      if (!name || !classNum) {
-        showToast("Please provide your name and pick a class.", "error");
+      if (!name || selectedIdx === "") {
+        showToast("Please enter your name and select a section.", "error");
         return;
       }
 
-      const match = appState.availableClasses.find(c => c.classNumber === classNum);
+      const match = appState.availableClasses[selectedIdx];
       if (match && match.passcode && match.passcode !== pass) {
         showToast("Incorrect class passcode!", "error");
         return;
       }
 
-      appState.user = { role: 'student', name, classNumber: classNum };
+      appState.user = { 
+        role: 'student', 
+        name: name, 
+        classNumber: match.classNumber, 
+        teacherUsername: match.teacherUsername 
+      };
+
       sessionStorage.setItem('sim_user', JSON.stringify(appState.user));
       applyAuthenticatedSession();
     }
 
-    // Teacher authentication using Username + Password against UserRoles sheet
     function handleInstructorLogin(e) {
       e.preventDefault();
       const username = document.getElementById('loginTeacherUsername').value.trim();
@@ -537,7 +547,11 @@
         .then(res => res.json())
         .then(res => {
           if (res.success) {
-            appState.user = { role: 'instructor', name: res.teacherName || username, classNumber: 'ALL' };
+            appState.user = { 
+              role: 'instructor', 
+              name: res.teacherName || username, 
+              username: username.toLowerCase() 
+            };
             sessionStorage.setItem('sim_user', JSON.stringify(appState.user));
             applyAuthenticatedSession();
           } else {
@@ -577,8 +591,8 @@
       if (u.role === 'instructor') {
         badge.className = "text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200";
         badge.innerText = "Teacher Portal";
-        // Present the teacher's name dynamically in their dashboard
         document.getElementById('teacherDashboardName').innerText = u.name;
+        document.getElementById('teacherUsernameSub').innerText = `Username: @${u.username}`;
       } else {
         badge.className = "text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200";
         badge.innerText = "Student Portal";
@@ -592,7 +606,7 @@
 
     function getStudentStorageKey() {
       if (!appState.user) return null;
-      return `witch_${appState.user.classNumber}_${appState.user.name.replace(/\s+/g, '_')}`;
+      return `witch_${appState.user.teacherUsername}_${appState.user.classNumber}_${appState.user.name.replace(/\s+/g, '_')}`;
     }
 
     function saveStudentWitchCampaignState() {
@@ -831,7 +845,7 @@
       document.getElementById('witchSummaryModal').classList.add('hidden');
     }
 
-    // GET-based student submission
+    // GET-based student submission tagged with teacherUsername
     function sendSubmissionToGoogleSheet() {
       const sw = appState.studentWitch;
       const u = appState.user;
@@ -853,6 +867,7 @@
 
       const params = new URLSearchParams({
         action: 'submitStudentLog',
+        teacherUsername: u.teacherUsername,
         classNumber: u.classNumber,
         name: u.name,
         payoff: sw.balance,
@@ -870,15 +885,20 @@
         });
     }
 
+    // Fetch Google Sheet Roster STRICTLY for this logged-in teacher's username
     function fetchGoogleSheetRoster() {
-      showToast("Fetching from StudentLogs sheet...", "info");
-      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?action=getStudentLogs`)
+      const u = appState.user;
+      if (!u || u.role !== 'instructor') return;
+
+      showToast("Fetching your students' logs...", "info");
+
+      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?action=getStudentLogs&teacherUsername=${encodeURIComponent(u.username)}`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
             appState.classWitchStudents = data;
             updateWitchInstructorRoster();
-            showToast(`Loaded ${data.length} submissions from StudentLogs!`, "success");
+            showToast(`Loaded ${data.length} submissions for your sections!`, "success");
           }
         })
         .catch(err => {
@@ -946,7 +966,7 @@
       counter.innerText = `${appState.classWitchStudents.length} Submissions`;
 
       if (appState.classWitchStudents.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">No student logs yet. Click 'Sync Student Logs' above.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">No submissions found for your account.</td></tr>`;
         return;
       }
 
