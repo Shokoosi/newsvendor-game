@@ -73,7 +73,7 @@
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Teacher Security PIN</label>
           <input type="password" id="loginPin" required placeholder="Stored in UserRoles sheet" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white font-mono-num transition">
-          <span class="text-[11px] text-slate-500 mt-1 block">Default PIN is <strong class="text-purple-700 font-mono-num">1234</strong></span>
+          <span class="text-[11px] text-slate-500 mt-1 block">Default PIN is <strong class="text-purple-700 font-mono-num">4321</strong></span>
         </div>
         <button type="submit" class="w-full mt-2 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition">
           Unlock Teacher Portal <i data-lucide="shield" class="w-4 h-4"></i>
@@ -459,7 +459,7 @@
   <!-- ================= SCRIPTS ================= -->
   <script>
     // =========================================================================
-    // YOUR LIVE GOOGLE APPS SCRIPT WEB APP URL
+    // YOUR LIVE DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
     // =========================================================================
     const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycKdQ20rfUkoV0Ju98aWGynzZrZkQdx4XG5XBkONVR9KqzzYIJywqZhTssPJUDl7tn/exec";
     // =========================================================================
@@ -471,7 +471,7 @@
     }
 
     const appState = {
-      user: null,
+      user: null, // { role: 'student'|'instructor', name: string, classNumber: string }
       studentWitch: getFreshStudentState(),
       classWitchStudents: [],
       availableClasses: []
@@ -548,30 +548,26 @@
       e.preventDefault();
       const pin = document.getElementById('loginPin').value.trim();
 
-      fetch(GOOGLE_SHEET_WEBAPP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verifyTeacherPin', pin: pin })
-      })
-      .then(res => res.json())
-      .then(res => {
-        if (res.success) {
-          appState.user = { role: 'instructor', name: 'Teacher', classNumber: 'ALL' };
-          sessionStorage.setItem('sim_user', JSON.stringify(appState.user));
-          applyAuthenticatedSession();
-        } else {
-          showToast("Invalid Teacher PIN in UserRoles sheet.", "error");
-        }
-      })
-      .catch(() => {
-        if (pin === '1234') {
-          appState.user = { role: 'instructor', name: 'Teacher', classNumber: 'ALL' };
-          sessionStorage.setItem('sim_user', JSON.stringify(appState.user));
-          applyAuthenticatedSession();
-        } else {
-          showToast("Error verifying PIN.", "error");
-        }
-      });
+      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?action=verifyTeacherPin&pin=${encodeURIComponent(pin)}`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success) {
+            appState.user = { role: 'instructor', name: 'Teacher', classNumber: 'ALL' };
+            sessionStorage.setItem('sim_user', JSON.stringify(appState.user));
+            applyAuthenticatedSession();
+          } else {
+            showToast("Invalid Teacher PIN in UserRoles sheet.", "error");
+          }
+        })
+        .catch(() => {
+          if (pin === '4321' || pin === '1234') {
+            appState.user = { role: 'instructor', name: 'Teacher', classNumber: 'ALL' };
+            sessionStorage.setItem('sim_user', JSON.stringify(appState.user));
+            applyAuthenticatedSession();
+          } else {
+            showToast("Error verifying PIN.", "error");
+          }
+        });
     }
 
     function handleAddNewClass(e) {
@@ -581,21 +577,23 @@
 
       if (!cNum || !cPass) return;
 
+      const payload = {
+        action: 'addClass',
+        classNumber: cNum,
+        studentPasscode: cPass,
+        pin: '4321'
+      };
+
       fetch(GOOGLE_SHEET_WEBAPP_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'addClass',
-          classNumber: cNum,
-          studentPasscode: cPass,
-          pin: '1234'
-        })
+        mode: 'no-cors',
+        body: JSON.stringify(payload)
       })
       .then(() => {
         showToast(`Saved ${cNum} to UserRoles sheet!`, "success");
         document.getElementById('newClassNumber').value = '';
         document.getElementById('newClassPasscode').value = '';
-        loadClassListDropdown();
+        setTimeout(loadClassListDropdown, 1500);
       })
       .catch(() => showToast("Error writing to UserRoles sheet.", "error"));
     }
@@ -899,7 +897,7 @@
 
       fetch(GOOGLE_SHEET_WEBAPP_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        mode: "no-cors",
         body: JSON.stringify(payload)
       }).then(() => {
         showToast("Saved to StudentLogs sheet!", "success");
