@@ -45,7 +45,7 @@
       <form id="formStudentLogin" onsubmit="handleStudentLogin(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Your Full Name</label>
-          <input type="text" id="loginStudentName" required placeholder="e.g. Alex Morgan" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white transition">
+          <input type="text" id="loginStudentName" required placeholder="Enter your full name" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white transition">
         </div>
         <div>
           <div class="flex items-center justify-between mb-1">
@@ -55,12 +55,12 @@
             </button>
           </div>
           <select id="loginStudentClass" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white font-mono-num transition">
-            <option value="">Loading classes from UserRoles...</option>
+            <option value="">Select your class</option>
           </select>
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Class Passcode</label>
-          <input type="password" id="loginStudentPasscode" placeholder="Provided by your teacher" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white font-mono-num transition">
+          <input type="password" id="loginStudentPasscode" placeholder="Enter class passcode" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white font-mono-num transition">
         </div>
         <p class="text-[11px] text-slate-500 leading-tight">Your 30-night campaign runs once and saves permanently to your class record.</p>
         <button type="submit" class="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition">
@@ -68,12 +68,15 @@
         </button>
       </form>
 
-      <!-- Teacher Sign In Form -->
+      <!-- Teacher Sign In Form (Name + Password, No Default Hints) -->
       <form id="formInstructorLogin" onsubmit="handleInstructorLogin(event)" class="space-y-4 hidden">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Teacher Security PIN</label>
-          <input type="password" id="loginPin" required placeholder="Stored in UserRoles sheet" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white font-mono-num transition">
-          <span class="text-[11px] text-slate-500 mt-1 block">Default PIN is <strong class="text-purple-700 font-mono-num">4321</strong></span>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Teacher Name</label>
+          <input type="text" id="loginTeacherName" required placeholder="Enter teacher name" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white transition">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Password / PIN</label>
+          <input type="password" id="loginPin" required placeholder="Enter password" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white font-mono-num transition">
         </div>
         <button type="submit" class="w-full mt-2 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition">
           Unlock Teacher Portal <i data-lucide="shield" class="w-4 h-4"></i>
@@ -458,7 +461,7 @@
 
   <!-- ================= SCRIPTS ================= -->
   <script>
-    // Live Deployed Apps Script URL
+    // Live Apps Script Web App URL
     const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycKdQ20rfUkoV0Ju98aWGynzZrZkQdx4XG5XBkONVR9KqzzYIJywqZhTssPJUDl7tn/exec";
 
     const TOTAL_CAMPAIGN_NIGHTS = 30;
@@ -541,29 +544,31 @@
       applyAuthenticatedSession();
     }
 
+    // Teacher authentication using TeacherName + PIN against UserRoles
     function handleInstructorLogin(e) {
       e.preventDefault();
+      const teacherName = document.getElementById('loginTeacherName').value.trim();
       const pin = document.getElementById('loginPin').value.trim();
 
-      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?action=verifyTeacherPin&pin=${encodeURIComponent(pin)}`)
+      if (!teacherName || !pin) {
+        showToast("Please enter teacher name and password.", "error");
+        return;
+      }
+
+      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?action=verifyTeacher&name=${encodeURIComponent(teacherName)}&pin=${encodeURIComponent(pin)}`)
         .then(res => res.json())
         .then(res => {
           if (res.success) {
-            appState.user = { role: 'instructor', name: 'Teacher', classNumber: 'ALL' };
+            appState.user = { role: 'instructor', name: res.teacherName || teacherName, classNumber: 'ALL' };
             sessionStorage.setItem('sim_user', JSON.stringify(appState.user));
             applyAuthenticatedSession();
           } else {
-            showToast("Invalid Teacher PIN in UserRoles sheet.", "error");
+            showToast("Invalid Teacher Name or Password.", "error");
           }
         })
-        .catch(() => {
-          if (pin === '4321' || pin === '1234') {
-            appState.user = { role: 'instructor', name: 'Teacher', classNumber: 'ALL' };
-            sessionStorage.setItem('sim_user', JSON.stringify(appState.user));
-            applyAuthenticatedSession();
-          } else {
-            showToast("Error verifying PIN.", "error");
-          }
+        .catch(err => {
+          console.error("Verification error", err);
+          showToast("Could not verify teacher credentials.", "error");
         });
     }
 
@@ -576,9 +581,10 @@
 
       const params = new URLSearchParams({
         action: 'addClass',
+        teacherName: (appState.user && appState.user.name) || 'Teacher',
         classNumber: cNum,
         studentPasscode: cPass,
-        pin: '4321'
+        pin: ''
       });
 
       fetch(`${GOOGLE_SHEET_WEBAPP_URL}?${params.toString()}`)
@@ -599,6 +605,8 @@
       closeWitchSummaryModal();
       document.getElementById('loginStudentName').value = '';
       document.getElementById('loginStudentPasscode').value = '';
+      document.getElementById('loginTeacherName').value = '';
+      document.getElementById('loginPin').value = '';
       
       document.getElementById('loginGateOverlay').classList.remove('hidden');
       loadClassListDropdown();
@@ -610,7 +618,7 @@
 
       const u = appState.user;
       document.getElementById('headerUserName').innerText = u.name;
-      document.getElementById('headerUserSub').innerText = `Class: ${u.classNumber}`;
+      document.getElementById('headerUserSub').innerText = u.role === 'instructor' ? 'Teacher Portal' : `Class: ${u.classNumber}`;
 
       const badge = document.getElementById('headerRoleBadge');
       if (u.role === 'instructor') {
@@ -868,7 +876,7 @@
       document.getElementById('witchSummaryModal').classList.add('hidden');
     }
 
-    // GET-based submission to bypass CORS restrictions
+    // GET-based student submission
     function sendSubmissionToGoogleSheet() {
       const sw = appState.studentWitch;
       const u = appState.user;
@@ -898,7 +906,7 @@
         encounters: JSON.stringify(compactEncounters)
       });
 
-      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?${params.toString()}`, { mode: 'no-cors' })
+      fetch(`${GOOGLE_SHEET_WEBAPP_URL}?${params.toString()}`)
         .then(() => {
           showToast("Saved to StudentLogs sheet!", "success");
         })
